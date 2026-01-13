@@ -17,6 +17,7 @@ sys.path.append(os.path.join(project_root, 'gym-pcgrl'))
 from utils import ResourceMonitor
 from wrappers.pcgrl_env import make_pcgrl_env
 from wrappers.helper import calculate_content_metrics, save_level
+from visualize_levels import save_level_image, render_level
 
 try:
     from stable_baselines3 import PPO, A2C
@@ -124,7 +125,12 @@ class LevelGenerator:
                 level_path = os.path.join(save_dir, f'level_{i+1}')
                 save_level(level, level_path + '.npy', format='npy')
                 save_level(level, level_path + '.txt', format='txt')
-                print(f"  ✓ Saved to {level_path}")
+                
+                # Save visualization as high-res PNG
+                img_path = level_path + '.png'
+                save_level_image(level, img_path, game=self.game, 
+                               scale=25, show_grid=True, dpi=300)
+                print(f"  ✓ Saved to {level_path} (.npy, .txt, .png)")
             
             # Visualize
             if visualize:
@@ -146,11 +152,13 @@ class LevelGenerator:
             return np.zeros((10, 10), dtype=int)
     
     def _visualize_level(self, level, title="Level"):
-        """Visualize level as heatmap."""
-        plt.figure(figsize=(8, 6))
-        plt.imshow(level, cmap='tab20', interpolation='nearest')
-        plt.title(title)
-        plt.colorbar(label='Tile Type')
+        """Visualize level with proper tile colors."""
+        rgb = render_level(level, game=self.game, scale=20, show_grid=True)
+        
+        plt.figure(figsize=(10, 8))
+        plt.imshow(rgb)
+        plt.title(title, fontsize=14, fontweight='bold')
+        plt.axis('off')
         plt.tight_layout()
         plt.show()
     

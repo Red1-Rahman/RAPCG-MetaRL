@@ -1,18 +1,5 @@
 # Resource-Aware Training Implementation
 
-## 🎯 From "Resource Observant" to "Resource Aware"
-
-### The Problem (Before)
-
-The original implementation was **"Resource Observant"** not **"Resource Aware"**:
-
-- Agent generated content and received quality rewards from gym-pcgrl
-- ResourceAwareCallback **monitored** RAM/CPU/GPU usage
-- Logged resources alongside rewards
-- **BUT**: No feedback loop telling the agent "High RAM = Bad"
-- Result: Agent was blind to resource constraints
-
-### The Solution (Now)
 
 Implemented a **complete feedback loop** with **Reward Shaping**:
 
