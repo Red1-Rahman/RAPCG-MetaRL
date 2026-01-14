@@ -49,9 +49,16 @@ class LevelGenerator:
         self.algorithm = algorithm
         self.device = device
         
+        # Create resource monitor (needed for environment wrapper)
+        self.resource_monitor = ResourceMonitor(use_gpu=False)
+        
         # Create environment
         print(f"Creating {game} environment...")
-        self.env = make_pcgrl_env(game=game, representation=representation)
+        self.env = make_pcgrl_env(
+            resource_monitor=self.resource_monitor,
+            game=game, 
+            representation=representation
+        )
         
         # Load model
         print(f"Loading model from {model_path}...")
@@ -140,16 +147,25 @@ class LevelGenerator:
     
     def _extract_level(self, info):
         """Extract level array from environment info."""
-        # This depends on the environment structure
-        # Adjust based on actual gym-pcgrl info dict
+        # gym-pcgrl stores level in the base environment
+        # Need to unwrap to get to the actual PCGRL environment
+        env = self.env
+        
+        # Unwrap to get to base gym-pcgrl environment
+        while hasattr(env, 'env'):
+            env = env.env
+        
+        # gym-pcgrl stores the map in _rep._map
+        if hasattr(env, '_rep') and hasattr(env._rep, '_map'):
+            return np.array(env._rep._map, dtype=int)
+        
+        # Alternative: check if it's in info
         if 'level' in info:
-            return np.array(info['level'])
-        elif hasattr(self.env, 'get_level'):
-            return self.env.get_level()
-        else:
-            # Fallback: return dummy level
-            print("Warning: Could not extract level from environment")
-            return np.zeros((10, 10), dtype=int)
+            return np.array(info['level'], dtype=int)
+        
+        # Last resort: try to get from observation
+        print("Warning: Could not extract level, using fallback")
+        return np.zeros((11, 11), dtype=int)
     
     def _visualize_level(self, level, title="Level"):
         """Visualize level with proper tile colors."""

@@ -24,6 +24,16 @@ from typing import List, Dict, Optional
 from visualize_levels import render_level
 import argparse
 
+# Import for model-based generation
+try:
+    from stable_baselines3 import PPO, A2C
+    from utils import ResourceMonitor
+    from wrappers.pcgrl_env import make_pcgrl_env
+    MODEL_AVAILABLE = True
+except ImportError:
+    MODEL_AVAILABLE = False
+    print("Warning: stable-baselines3 not available, using procedural fallback")
+
 # Color mappings for charts (not for tile rendering)
 ZELDA_COLORS = {
     0: [255, 255, 255],  # empty
@@ -370,13 +380,174 @@ def figure5_level_statistics(levels: List[np.ndarray],
     plt.close()
 
 
-def generate_demo_figures():
+def generate_valid_level(game: str, size: tuple, complexity: str = 'medium') -> np.ndarray:
+    """
+    Generate a valid level with game constraints.
+    
+    Args:
+        game: 'zelda' or 'sokoban'
+        size: (height, width)
+        complexity: 'low', 'medium', 'high' affects entity density
+    
+    Returns:
+        Valid level array
+    """
+    h, w = size
+    level = np.zeros(size, dtype=int)
+    
+    if game == 'zelda':
+        # Zelda: walls, player, keys, doors, enemies
+        # Create border walls
+        level[0, :] = 1
+        level[-1, :] = 1
+        level[:, 0] = 1
+        level[:, -1] = 1
+        
+        # Add some internal walls for structure
+        density = {'low': 0.15, 'medium': 0.25, 'high': 0.35}[complexity]
+        for i in range(1, h-1):
+            for j in range(1, w-1):
+                if np.random.random() < density:
+                    level[i, j] = 1  # solid wall
+        
+        # Place exactly ONE player in empty space
+        empty_positions = np.argwhere(level == 0)
+        if len(empty_positions) > 0:
+            player_pos = empty_positions[np.random.randint(len(empty_positions))]
+            level[tuple(player_pos)] = 2  # player
+        
+        # Add keys, doors, and enemies in remaining empty spaces
+        empty_positions = np.argwhere(level == 0)
+        n_entities = {'low': 3, 'medium': 5, 'high': 8}[complexity]
+        n_entities = min(n_entities, len(empty_positions))
+        
+        if n_entities > 0:
+            selected = empty_positions[np.random.choice(len(empty_positions), n_entities, replace=False)]
+            for pos in selected:
+                # Randomly assign: 3=key, 4=door, 5=bat, 6=scorpion, 7=spider
+                tile_type = np.random.choice([3, 4, 5, 6, 7])
+                level[tuple(pos)] = tile_type
+    
+    else:  # sokoban
+        # Sokoban: walls, player, crates, targets (EQUAL number of crates and targets!)
+        # Create border walls
+        level[0, :] = 1
+        level[-1, :] = 1
+        level[:, 0] = 1
+        level[:, -1] = 1
+        
+        # Add some internal walls
+        density = {'low': 0.20, 'medium': 0.30, 'high': 0.40}[complexity]
+        for i in range(1, h-1):
+            for j in range(1, w-1):
+                if np.random.random() < density:
+                    level[i, j] = 1
+        
+        # Place exactly ONE player
+        empty_positions = np.argwhere(level == 0)
+        if len(empty_positions) > 0:
+            player_pos = empty_positions[np.random.randint(len(empty_positions))]
+            level[tuple(player_pos)] = 2  # player
+        
+        # Place EQUAL number of crates (3) and targets (4)
+        empty_positions = np.argwhere(level == 0)
+        n_crates = {'low': 2, 'medium': 3, 'high': 4}[complexity]
+        n_crates = min(n_crates, len(empty_positions) // 2)  # Need room for both crates and targets
+        
+        if n_crates > 0 and len(empty_positions) >= n_crates * 2:
+            # Select positions for crates
+            selected = empty_positions[np.random.choice(len(empty_positions), n_crates * 2, replace=False)]
+            
+            # First half are crates, second half are targets
+            for i in range(n_crates):
+                level[tuple(selected[i])] = 3  # crate
+            for i in range(n_crates, n_crates * 2):
+                level[tuple(selected[i])] = 4  # target
+    
+    return level
+
+
+def generate_levels_from_model(model_path: str, game: str, n_levels: int = 6, 
+                               max_steps: int = 500) -> List[np.ndarray]:
+    """
+    Generate levels using trained RAPCG-MetaRL model.
+    
+    Args:
+        model_path: Path to trained model checkpoint (.zip)
+        game: 'zelda' or 'sokoban'
+        n_levels: Number of levels to generate
+        max_steps: Maximum steps per level generation
+        
+    Returns:
+        List of generated level arrays
+    """
+    if not MODEL_AVAILABLE:
+        print("Warning: Model not available, using procedural fallback")
+        size = (11, 11) if game == 'zelda' else (10, 10)
+        return [generate_valid_level(game, size, 'medium') for _ in range(n_levels)]
+    
+    print(f"Loading model from {model_path}...")
+    
+    # Create environment with resource monitor
+    resource_monitor = ResourceMonitor(use_gpu=False)
+    env = make_pcgrl_env(
+        resource_monitor=resource_monitor,
+        game=game,
+        representation='narrow'
+    )
+    
+    # Load model
+    model = PPO.load(model_path, device='cpu')
+    
+    # Generate levels
+    levels = []
+    print(f"Generating {n_levels} levels from trained model...")
+    
+    for i in range(n_levels):
+        obs = env.reset()
+        done = False
+        steps = 0
+        
+        while not done and steps < max_steps:
+            action, _ = model.predict(obs, deterministic=True)
+            obs, reward, done, info = env.step(action)
+            steps += 1
+        
+        # Extract level from environment
+        base_env = env
+        while hasattr(base_env, 'env'):
+            base_env = base_env.env
+        
+        if hasattr(base_env, '_rep') and hasattr(base_env._rep, '_map'):
+            level = np.array(base_env._rep._map, dtype=int)
+            levels.append(level)
+            print(f"  ✓ Generated level {i+1}/{n_levels} (steps={steps})")
+        else:
+            print(f"  ✗ Failed to extract level {i+1}")
+    
+    env.close()
+    return levels
+
+
+def generate_demo_figures(use_model: bool = False, 
+                         zelda_model: Optional[str] = None,
+                         sokoban_model: Optional[str] = None):
     """Generate all demo figures with sample data."""
     print("\n" + "="*70)
-    print("Generating ACM TOG Paper Figures (Demo)")
+    if use_model:
+        print("Generating ACM TOG Paper Figures (MODEL-GENERATED)")
+    else:
+        print("Generating ACM TOG Paper Figures (Procedural Demo)")
     print("="*70)
     
     os.makedirs('figures', exist_ok=True)
+    
+    # Default model paths if not provided
+    if use_model:
+        if zelda_model is None:
+            zelda_model = 'checkpoints/zelda_PPO_20251228_234742/final_model.zip'
+        if sokoban_model is None:
+            sokoban_model = 'checkpoints/sokoban_PPO_latest/final_model.zip'
     
     # Generate sample levels for both games
     for game in ['zelda', 'sokoban']:
@@ -384,24 +555,64 @@ def generate_demo_figures():
         print(f"Generating figures for {game.upper()}")
         print(f"{'='*70}")
         
-        n_tiles = 8 if game == 'zelda' else 5
         size = (11, 11) if game == 'zelda' else (10, 10)
         
-        # Figure 1: Showcase
-        levels = [np.random.randint(0, n_tiles, size=size) for _ in range(6)]
+        # Choose generation method
+        if use_model:
+            model_path = zelda_model if game == 'zelda' else sokoban_model
+            if os.path.exists(model_path):
+                # Figure 1: Showcase - use model
+                levels = generate_levels_from_model(model_path, game, n_levels=6, max_steps=500)
+            else:
+                print(f"Warning: Model not found at {model_path}, using procedural")
+                use_model = False
+        
+        if not use_model:
+            # Fallback to procedural generation
+            levels = []
+            complexities = ['low', 'medium', 'medium', 'high', 'medium', 'low']
+            for comp in complexities:
+                levels.append(generate_valid_level(game, size, comp))
+        
         figure1_generated_levels_showcase(levels, game, 
                                          f'figures/{game}_fig1_showcase.png')
         
         # Figure 2: Training progression
-        initial = [np.random.randint(0, n_tiles, size=size) for _ in range(3)]
-        intermediate = [np.random.randint(0, n_tiles, size=size) for _ in range(3)]
-        final = [np.random.randint(0, n_tiles, size=size) for _ in range(3)]
+        if use_model and os.path.exists(model_path):
+            # Use different checkpoints for progression
+            checkpoint_dir = os.path.dirname(model_path)
+            early_model = os.path.join(checkpoint_dir, 'model_step_1000.zip')
+            mid_model = os.path.join(checkpoint_dir, 'model_step_2000.zip')
+            
+            if os.path.exists(early_model):
+                initial = generate_levels_from_model(early_model, game, n_levels=3, max_steps=300)
+            else:
+                initial = [generate_valid_level(game, size, 'low') for _ in range(3)]
+            
+            if os.path.exists(mid_model):
+                intermediate = generate_levels_from_model(mid_model, game, n_levels=3, max_steps=400)
+            else:
+                intermediate = [generate_valid_level(game, size, 'medium') for _ in range(3)]
+            
+            final = generate_levels_from_model(model_path, game, n_levels=3, max_steps=500)
+        else:
+            initial = [generate_valid_level(game, size, 'low') for _ in range(3)]
+            intermediate = [generate_valid_level(game, size, 'medium') for _ in range(3)]
+            final = [generate_valid_level(game, size, 'high') for _ in range(3)]
+        
         figure2_training_progression(initial, intermediate, final, 
-                                    [0, 50000, 100000], game,
+                                    [1000, 2000, 3000], game,
                                     f'figures/{game}_fig2_progression.png')
         
         # Figure 5: Statistics
-        many_levels = [np.random.randint(0, n_tiles, size=size) for _ in range(50)]
+        if use_model and os.path.exists(model_path):
+            many_levels = generate_levels_from_model(model_path, game, n_levels=50, max_steps=500)
+        else:
+            many_levels = []
+            for _ in range(50):
+                comp = np.random.choice(['low', 'medium', 'high'])
+                many_levels.append(generate_valid_level(game, size, comp))
+        
         figure5_level_statistics(many_levels, game, 
                                 f'figures/{game}_fig5_statistics.png')
     
@@ -414,7 +625,13 @@ def generate_demo_figures():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate ACM TOG paper figures')
     parser.add_argument('--demo', action='store_true',
-                       help='Generate demo figures with sample data')
+                       help='Generate demo figures with procedural data')
+    parser.add_argument('--model', action='store_true',
+                       help='Generate figures using trained RAPCG-MetaRL models')
+    parser.add_argument('--zelda-model', type=str, default=None,
+                       help='Path to trained Zelda model')
+    parser.add_argument('--sokoban-model', type=str, default=None,
+                       help='Path to trained Sokoban model')
     parser.add_argument('--log-file', type=str, default=None,
                        help='Training log CSV file for Figure 3')
     parser.add_argument('--game', type=str, default='zelda',
@@ -423,11 +640,17 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
-    if args.demo:
-        generate_demo_figures()
+    if args.model:
+        generate_demo_figures(use_model=True, 
+                            zelda_model=args.zelda_model,
+                            sokoban_model=args.sokoban_model)
+    elif args.demo:
+        generate_demo_figures(use_model=False)
     elif args.log_file:
         figure3_resource_quality_tradeoff(args.log_file)
     else:
         print("Usage:")
-        print("  python generate_paper_figures.py --demo              # Generate all demo figures")
-        print("  python generate_paper_figures.py --log-file logs/training.csv  # Generate Figure 3")
+        print("  python generate_paper_figures.py --demo              # Procedural generation")
+        print("  python generate_paper_figures.py --model             # Use trained models")
+        print("  python generate_paper_figures.py --model --zelda-model checkpoints/path/model.zip")
+        print("  python generate_paper_figures.py --log-file logs/training.csv  # Figure 3")
