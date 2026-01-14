@@ -21,8 +21,28 @@ import matplotlib.patches as patches
 from matplotlib.gridspec import GridSpec
 import pandas as pd
 from typing import List, Dict, Optional
-from visualize_levels import render_level, ZELDA_COLORS, SOKOBAN_COLORS
+from visualize_levels import render_level
 import argparse
+
+# Color mappings for charts (not for tile rendering)
+ZELDA_COLORS = {
+    0: [255, 255, 255],  # empty
+    1: [0, 0, 0],        # solid
+    2: [0, 255, 0],      # player
+    3: [255, 255, 0],    # key
+    4: [0, 255, 255],    # door
+    5: [255, 0, 0],      # bat
+    6: [255, 128, 0],    # scorpion
+    7: [128, 0, 128],    # spider
+}
+
+SOKOBAN_COLORS = {
+    0: [255, 255, 255],  # empty
+    1: [0, 0, 0],        # solid
+    2: [0, 255, 0],      # player
+    3: [165, 42, 42],    # crate
+    4: [255, 0, 0],      # target
+}
 
 
 def set_publication_style():

@@ -1,6 +1,7 @@
 """
 Level Visualization for RAPCG-MetaRL
 Generates high-quality images of Zelda and Sokoban levels for ACM TOG paper.
+Uses actual tile PNG images for authentic game visualization.
 """
 
 import numpy as np
@@ -13,67 +14,115 @@ import argparse
 
 
 # ============================================================================
-# TILE COLOR MAPPINGS (Based on gym-pcgrl)
+# TILE IMAGE PATHS
 # ============================================================================
 
-ZELDA_TILES = {
-    'empty': 0,
-    'solid': 1,
-    'player': 2,
-    'key': 3,
-    'door': 4,
-    'bat': 5,
-    'scorpion': 6,
-    'spider': 7,
+ZELDA_TILE_PATHS = {
+    0: 'zelda_tiles/empty.png',
+    1: 'zelda_tiles/solid.png',
+    2: 'zelda_tiles/player.png',
+    3: 'zelda_tiles/key.png',
+    4: 'zelda_tiles/door.png',
+    5: 'zelda_tiles/bat.png',
+    6: 'zelda_tiles/scorpion.png',
+    7: 'zelda_tiles/spider.png',
 }
 
-ZELDA_COLORS = {
-    0: [255, 255, 255],  # empty - white
-    1: [0, 0, 0],        # solid - black
-    2: [0, 255, 0],      # player - green
-    3: [255, 255, 0],    # key - yellow
-    4: [0, 255, 255],    # door - cyan
-    5: [255, 0, 0],      # bat - red
-    6: [255, 128, 0],    # scorpion - orange
-    7: [128, 0, 128],    # spider - purple
+SOKOBAN_TILE_PATHS = {
+    0: 'sokoban_tiles/empty.png',
+    1: 'sokoban_tiles/solid.png',
+    2: 'sokoban_tiles/player.png',
+    3: 'sokoban_tiles/crate.png',
+    4: 'sokoban_tiles/target.png',
 }
 
-SOKOBAN_TILES = {
-    'empty': 0,
-    'solid': 1,
-    'player': 2,
-    'crate': 3,
-    'target': 4,
-}
-
-SOKOBAN_COLORS = {
-    0: [255, 255, 255],  # empty - white
-    1: [0, 0, 0],        # solid - black
-    2: [0, 255, 0],      # player - green
-    3: [165, 42, 42],    # crate - brown
-    4: [255, 0, 0],      # target - red
-}
+# Cache for loaded tile images
+_TILE_CACHE = {}
 
 
-def level_to_rgb(level: np.ndarray, game: str = 'zelda') -> np.ndarray:
+def load_tile_images(game: str = 'zelda', tile_size: int = 16) -> Dict[int, np.ndarray]:
     """
-    Convert a level array to RGB image.
+    Load tile images from PNG files.
+    
+    Args:
+        game: 'zelda' or 'sokoban'
+        tile_size: Target size for tiles (will resize if needed)
+    
+    Returns:
+        Dictionary mapping tile ID to RGB array
+    """
+    cache_key = f"{game}_{tile_size}"
+    
+    if cache_key in _TILE_CACHE:
+        return _TILE_CACHE[cache_key]
+    
+    tile_paths = ZELDA_TILE_PATHS if game == 'zelda' else SOKOBAN_TILE_PATHS
+    tile_images = {}
+    
+    for tile_id, path in tile_paths.items():
+        if os.path.exists(path):
+            img = Image.open(path).convert('RGB')
+            
+            # Resize to target size
+            if img.size != (tile_size, tile_size):
+                img = img.resize((tile_size, tile_size), Image.Resampling.NEAREST)
+            
+            tile_images[tile_id] = np.array(img, dtype=np.uint8)
+        else:
+            # Fallback to solid color if image not found
+            print(f"⚠ Warning: Tile image not found: {path}, using fallback color")
+            tile_images[tile_id] = create_fallback_tile(tile_id, game, tile_size)
+    
+    _TILE_CACHE[cache_key] = tile_images
+    return tile_images
+
+
+def create_fallback_tile(tile_id: int, game: str, size: int = 16) -> np.ndarray:
+    """Create a solid color fallback tile."""
+    # Fallback colors (from original implementation)
+    if game == 'zelda':
+        colors = {
+            0: [255, 255, 255], 1: [0, 0, 0], 2: [0, 255, 0],
+            3: [255, 255, 0], 4: [0, 255, 255], 5: [255, 0, 0],
+            6: [255, 128, 0], 7: [128, 0, 128]
+        }
+    else:
+        colors = {
+            0: [255, 255, 255], 1: [0, 0, 0], 2: [0, 255, 0],
+            3: [165, 42, 42], 4: [255, 0, 0]
+        }
+    
+    color = colors.get(tile_id, [128, 128, 128])
+    tile = np.full((size, size, 3), color, dtype=np.uint8)
+    return tile
+
+def level_to_rgb(level: np.ndarray, game: str = 'zelda', tile_size: int = 16) -> np.ndarray:
+    """
+    Convert a level array to RGB image using tile PNG images.
     
     Args:
         level: 2D numpy array with tile indices
         game: 'zelda' or 'sokoban'
+        tile_size: Size of each tile in pixels
     
     Returns:
         RGB image as numpy array (H, W, 3)
     """
-    colors = ZELDA_COLORS if game == 'zelda' else SOKOBAN_COLORS
+    tile_images = load_tile_images(game, tile_size)
     
     h, w = level.shape
-    rgb = np.zeros((h, w, 3), dtype=np.uint8)
+    rgb = np.zeros((h * tile_size, w * tile_size, 3), dtype=np.uint8)
     
-    for tile_id, color in colors.items():
-        mask = level == tile_id
-        rgb[mask] = color
+    for i in range(h):
+        for j in range(w):
+            tile_id = int(level[i, j])
+            if tile_id in tile_images:
+                tile_img = tile_images[tile_id]
+                y_start = i * tile_size
+                y_end = y_start + tile_size
+                x_start = j * tile_size
+                x_end = x_start + tile_size
+                rgb[y_start:y_end, x_start:x_end] = tile_img
     
     return rgb
 
@@ -81,33 +130,36 @@ def level_to_rgb(level: np.ndarray, game: str = 'zelda') -> np.ndarray:
 def render_level(level: np.ndarray, game: str = 'zelda', 
                  scale: int = 20, show_grid: bool = True) -> np.ndarray:
     """
-    Render level with grid lines for better visibility.
+    Render level with tile images and optional grid lines.
     
     Args:
         level: 2D numpy array with tile indices
         game: 'zelda' or 'sokoban'
-        scale: Pixels per tile
+        scale: Pixels per tile (tiles will be this size)
         show_grid: Whether to show grid lines
     
     Returns:
         RGB image as numpy array
     """
-    rgb = level_to_rgb(level, game)
-    h, w = level.shape
-    
-    # Scale up
-    rgb_scaled = np.repeat(np.repeat(rgb, scale, axis=0), scale, axis=1)
+    # Render using tile images at the specified scale
+    rgb = level_to_rgb(level, game, tile_size=scale)
     
     if show_grid:
+        h, w = level.shape
         # Add grid lines
+        grid_color = [80, 80, 80]  # Dark gray for better visibility
+        line_width = max(1, scale // 16)  # Scale line width with tile size
+        
         for i in range(h + 1):
             y = i * scale
-            rgb_scaled[y:y+1, :] = [200, 200, 200]
+            if y < rgb.shape[0]:
+                rgb[y:min(y+line_width, rgb.shape[0]), :] = grid_color
         for j in range(w + 1):
             x = j * scale
-            rgb_scaled[:, x:x+1] = [200, 200, 200]
+            if x < rgb.shape[1]:
+                rgb[:, x:min(x+line_width, rgb.shape[1])] = grid_color
     
-    return rgb_scaled
+    return rgb
 
 
 def save_level_image(level: np.ndarray, filepath: str, game: str = 'zelda',
@@ -236,40 +288,47 @@ def create_training_comparison(levels_before: List[np.ndarray],
 
 def add_legend(game: str = 'zelda', save_path: Optional[str] = None, dpi: int = 300):
     """
-    Create a legend showing tile types and colors.
+    Create a legend showing tile types with actual tile images.
     
     Args:
         game: 'zelda' or 'sokoban'
         save_path: Path to save legend
         dpi: DPI for publication
     """
+    # Tile names mapping
     if game == 'zelda':
-        tiles = ZELDA_TILES
-        colors = ZELDA_COLORS
+        tile_names = ['Empty', 'Solid', 'Player', 'Key', 'Door', 'Bat', 'Scorpion', 'Spider']
     else:
-        tiles = SOKOBAN_TILES
-        colors = SOKOBAN_COLORS
+        tile_names = ['Empty', 'Solid', 'Player', 'Crate', 'Target']
     
-    fig, ax = plt.subplots(figsize=(6, len(tiles) * 0.5), dpi=dpi)
+    # Load tile images
+    tile_size = 48  # Larger for legend
+    tile_images = load_tile_images(game, tile_size)
+    
+    fig, ax = plt.subplots(figsize=(6, len(tile_names) * 0.6), dpi=dpi)
     ax.axis('off')
     
     y_pos = 0
-    for name, tile_id in sorted(tiles.items(), key=lambda x: x[1]):
-        color = np.array(colors[tile_id]) / 255.0
+    for tile_id, name in enumerate(tile_names):
+        if tile_id in tile_images:
+            # Display actual tile image
+            tile_img = tile_images[tile_id]
+            
+            # Create an inset axes for the tile
+            from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+            axins = ax.inset_axes([0, y_pos, 0.08, 0.08], transform=ax.transData)
+            axins.imshow(tile_img)
+            axins.axis('off')
+            
+            # Add label
+            ax.text(0.12, y_pos + 0.04, f'{name} (ID: {tile_id})',
+                   va='center', fontsize=12, fontweight='bold',
+                   transform=ax.transData)
         
-        # Draw color box
-        rect = patches.Rectangle((0, y_pos), 0.5, 0.8, 
-                                 facecolor=color, edgecolor='black', linewidth=2)
-        ax.add_patch(rect)
-        
-        # Add label
-        ax.text(0.7, y_pos + 0.4, f'{name.capitalize()} (ID: {tile_id})',
-               va='center', fontsize=12, fontweight='bold')
-        
-        y_pos -= 1
+        y_pos -= 0.12
     
-    ax.set_xlim(-0.1, 5)
-    ax.set_ylim(y_pos, 1)
+    ax.set_xlim(-0.02, 0.5)
+    ax.set_ylim(y_pos + 0.1, 0.15)
     
     title = f'{game.capitalize()} Tile Legend'
     ax.set_title(title, fontsize=14, fontweight='bold', pad=20)
@@ -318,13 +377,24 @@ def demo_visualizations(game: str = 'zelda'):
     output_dir = f'figures/{game}_demo'
     os.makedirs(output_dir, exist_ok=True)
     
-    # Generate random levels
+    # Generate random levels with only one player
+    levels = []
     if game == 'zelda':
-        levels = [np.random.randint(0, 8, size=(11, 11)) for _ in range(4)]
-        tiles = ZELDA_TILES
+        for _ in range(4):
+            # Generate random level (excluding player tile initially)
+            level = np.random.choice([0, 1, 3, 4, 5, 6, 7], size=(11, 11))
+            # Place exactly one player at random position
+            player_y, player_x = np.random.randint(1, 10), np.random.randint(1, 10)
+            level[player_y, player_x] = 2  # Player tile
+            levels.append(level)
     else:
-        levels = [np.random.randint(0, 5, size=(10, 10)) for _ in range(4)]
-        tiles = SOKOBAN_TILES
+        for _ in range(4):
+            # Generate random level (excluding player tile initially)
+            level = np.random.choice([0, 1, 3, 4], size=(10, 10))
+            # Place exactly one player at random position
+            player_y, player_x = np.random.randint(1, 9), np.random.randint(1, 9)
+            level[player_y, player_x] = 2  # Player tile
+            levels.append(level)
     
     # 1. Individual level images
     print("\n1. Individual level images:")
