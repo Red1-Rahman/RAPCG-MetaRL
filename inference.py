@@ -50,10 +50,16 @@ class LevelGenerator:
         self.device = device
         
         # Create resource monitor (needed for environment wrapper)
-        self.resource_monitor = ResourceMonitor(use_gpu=False)
+        # Enable GPU monitoring if device is cuda
+        use_gpu_monitor = (device == 'cuda' or (device == 'auto' and self._is_cuda_available()))
+        self.resource_monitor = ResourceMonitor(use_gpu=use_gpu_monitor)
         
         # Create environment
         print(f"Creating {game} environment...")
+        if use_gpu_monitor:
+            print(f"  GPU monitoring: ENABLED")
+        else:
+            print(f"  GPU monitoring: DISABLED (CPU-only mode)")
         self.env = make_pcgrl_env(
             resource_monitor=self.resource_monitor,
             game=game, 
@@ -70,6 +76,14 @@ class LevelGenerator:
             raise ValueError(f"Unsupported algorithm: {algorithm}")
         
         print("✓ Generator ready")
+    
+    def _is_cuda_available(self):
+        """Check if CUDA is available for PyTorch."""
+        try:
+            import torch
+            return torch.cuda.is_available()
+        except:
+            return False
     
     def generate(self, n_levels=1, max_steps=1000, deterministic=True, 
                  save_dir=None, visualize=True):

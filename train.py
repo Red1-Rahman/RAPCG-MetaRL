@@ -198,13 +198,26 @@ class MetaRLTrainer:
         self.device = device
         self.seed = seed
         
+        # Detect GPU availability and adjust device
+        if device == 'auto':
+            import torch
+            if torch.cuda.is_available():
+                self.device = 'cuda'
+                print("✓ GPU detected: Using CUDA for training")
+            else:
+                self.device = 'cpu'
+                print("⚠ No GPU detected: Using CPU for training")
+                print("  To enable GPU: pip install torch --index-url https://download.pytorch.org/whl/cu121")
+        
         # Set up experiment tracking
         if experiment_name is None:
             experiment_name = f"{game}_{algorithm}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         self.experiment_name = experiment_name
         
         # Initialize monitoring and logging
-        self.resource_monitor = ResourceMonitor(use_gpu=use_gpu_monitoring)
+        # Only monitor GPU if we're actually using it for training
+        use_gpu_monitoring_actual = use_gpu_monitoring and (self.device == 'cuda')
+        self.resource_monitor = ResourceMonitor(use_gpu=use_gpu_monitoring_actual)
         self.logger = TrainingLogger(log_dir=log_dir, experiment_name=experiment_name)
         self.checkpoint_dir = create_checkpoint_dir(checkpoint_dir, experiment_name)
         self.checkpoint_freq = checkpoint_freq
@@ -219,7 +232,12 @@ class MetaRLTrainer:
         print(f"Game: {game}")
         print(f"Algorithm: {algorithm}")
         print(f"Total Timesteps: {total_timesteps:,}")
-        print(f"Device: {device}")
+        print(f"Device: {self.device}")
+        if self.device == 'cuda':
+            import torch
+            print(f"GPU: {torch.cuda.get_device_name(0)}")
+            print(f"VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
+        print(f"GPU Monitoring: {'Enabled' if use_gpu_monitoring_actual else 'Disabled'}")
         print(f"Experiment: {experiment_name}")
         print(f"{'='*60}\n")
     
