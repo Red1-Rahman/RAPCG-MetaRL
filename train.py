@@ -166,7 +166,8 @@ class MetaRLTrainer:
                  use_gpu_monitoring=True,
                  checkpoint_freq=1000,
                  log_dir='logs',
-                 checkpoint_dir='checkpoints'):
+                 checkpoint_dir='checkpoints',
+                 sokoban_unsolvable_penalty=25.0):
         """
         Initialize Meta-RL trainer.
         
@@ -197,6 +198,7 @@ class MetaRLTrainer:
         self.n_envs = n_envs
         self.device = device
         self.seed = seed
+        self.sokoban_unsolvable_penalty = sokoban_unsolvable_penalty
         
         # Detect GPU availability and adjust device
         if device == 'auto':
@@ -260,7 +262,8 @@ class MetaRLTrainer:
                 representation=self.representation,
                 ram_penalty_weight=0.2,  # Configurable penalty weights
                 cpu_penalty_weight=0.1,
-                gpu_penalty_weight=0.1
+                gpu_penalty_weight=0.1,
+                sokoban_unsolvable_penalty=self.sokoban_unsolvable_penalty
             )
             # Don't use Monitor - we have our own logging via TrainingLogger
             if self.seed is not None:
@@ -321,6 +324,28 @@ class MetaRLTrainer:
                 'ent_coef': 0.01,
             })
             self.model = A2C(policy_type, self.env, **model_kwargs)
+            
+        elif self.algorithm == 'SAC':
+            # SAC requires continuous action spaces
+            # For discrete actions, it will fail - consider using PPO or A2C instead
+            action_space = self.env.action_space
+            from gym import spaces
+            if isinstance(action_space, spaces.Discrete):
+                print("⚠ WARNING: SAC is designed for continuous action spaces!")
+                print("  gym-pcgrl uses discrete actions. Consider using PPO or A2C instead.")
+                print("  Training may fail or produce poor results.")
+            
+            model_kwargs.update({
+                'buffer_size': 100000,  # Replay buffer size
+                'learning_starts': 1000,  # Start learning after N steps
+                'batch_size': 256,  # Larger batch for off-policy
+                'tau': 0.005,  # Soft update coefficient
+                'gamma': 0.99,
+                'train_freq': 1,
+                'gradient_steps': 1,
+                'ent_coef': 'auto',  # Automatic entropy tuning
+            })
+            self.model = SAC(policy_type, self.env, **model_kwargs)
             
         else:
             raise ValueError(f"Unsupported algorithm: {self.algorithm}")
@@ -427,6 +452,8 @@ class MetaRLTrainer:
             self.model = PPO.load(model_path, env=self.env)
         elif self.algorithm == 'A2C':
             self.model = A2C.load(model_path, env=self.env)
+        elif self.algorithm == 'SAC':
+            self.model = SAC.load(model_path, env=self.env)
         else:
             raise ValueError(f"Unsupported algorithm: {self.algorithm}")
         
@@ -444,8 +471,8 @@ def main():
                        choices=['narrow', 'wide', 'turtle'],
                        help='Representation type')
     parser.add_argument('--algorithm', type=str, default='PPO',
-                       choices=['PPO', 'A2C'],
-                       help='RL algorithm')
+                       choices=['PPO', 'A2C', 'SAC'],
+                       help='RL algorithm (SAC only works with continuous action spaces)')
     parser.add_argument('--timesteps', type=int, default=50000,
                        help='Total training timesteps')
     parser.add_argument('--n-steps', type=int, default=128,
@@ -454,6 +481,8 @@ def main():
                        help='Batch size')
     parser.add_argument('--lr', type=float, default=2.5e-4,
                        help='Learning rate')
+    parser.add_argument('--sokoban-penalty', type=float, default=25.0,
+                       help='Penalty for unsolvable Sokoban levels (default: 25.0 - very strict)')
     parser.add_argument('--n-envs', type=int, default=1,
                        help='Number of parallel environments')
     parser.add_argument('--device', type=str, default='auto',
@@ -488,7 +517,8 @@ def main():
         seed=args.seed,
         experiment_name=args.experiment_name,
         use_gpu_monitoring=not args.no_gpu_monitoring,
-        checkpoint_freq=args.checkpoint_freq
+        checkpoint_freq=args.checkpoint_freq,
+        sokoban_unsolvable_penalty=args.sokoban_penalty
     )
     
     # Set up environments and model

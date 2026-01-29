@@ -13,6 +13,11 @@ import gym
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'gym-pcgrl'))
 import gym_pcgrl
 
+# Import Sokoban solvability wrapper
+project_root = os.path.dirname(os.path.dirname(__file__))
+sys.path.insert(0, project_root)
+from sokoban_solvability_wrapper import SokobanSolvabilityWrapper
+
 
 class ResourceAwarePCGRLWrapper(gym.Wrapper):
     """
@@ -170,7 +175,8 @@ class ResourceAwarePCGRLWrapper(gym.Wrapper):
 
 def make_pcgrl_env(resource_monitor, game='zelda', representation='narrow', 
                    ram_penalty_weight=0.2, cpu_penalty_weight=0.1, 
-                   gpu_penalty_weight=0.1, crop_size=None, **kwargs):
+                   gpu_penalty_weight=0.1, crop_size=None, 
+                   sokoban_unsolvable_penalty=15.0, **kwargs):
     """
     Create a resource-aware PCGRL environment.
     
@@ -182,6 +188,7 @@ def make_pcgrl_env(resource_monitor, game='zelda', representation='narrow',
         cpu_penalty_weight: Weight for CPU penalty
         gpu_penalty_weight: Weight for GPU penalty
         crop_size: Crop size for observation
+        sokoban_unsolvable_penalty: Penalty for unsolvable Sokoban levels (default: 15.0)
         **kwargs: Additional arguments for the environment
         
     Returns:
@@ -195,6 +202,18 @@ def make_pcgrl_env(resource_monitor, game='zelda', representation='narrow',
     try:
         # Create environment using registered name
         env = gym.make(env_name)
+        
+        # For Sokoban, add solvability wrapper first
+        if game_name == 'sokoban':
+            print(f"  Adding Sokoban solvability wrapper (penalty={sokoban_unsolvable_penalty})")
+            print(f"  ⚠ Unsolvable Sokoban levels are USELESS and will be heavily penalized")
+            env = SokobanSolvabilityWrapper(
+                env,
+                unsolvable_penalty=sokoban_unsolvable_penalty,
+                min_solution_length=5,
+                max_solution_length=50,
+                terminate_on_unsolvable=False  # Set to True for even stricter training
+            )
         
         # Wrap with resource-aware wrapper (passing the monitor for feedback loop)
         env = ResourceAwarePCGRLWrapper(

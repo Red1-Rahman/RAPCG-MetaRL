@@ -2,3 +2,6 @@ procedural demo figures: python generate_paper_figures.py --demo
 custom model paths: python generate_paper_figures.py --model --zelda-model path/to/zelda_model.zip --sokoban-model path/to/sokoban_model.zip
 
 D:\Work\thesis\RAPCG-MetaRL\pcg_env\Scripts\python.exe train.py --game zelda --timesteps 10000 --checkpoint-freq 2000 --device auto
+
+D:\Work\thesis\RAPCG-MetaRL\pcg_env\Scripts\python.exe train.py --game sokoban --algorithm A2C --timesteps 10000 --checkpoint-freq 2000 --device auto
+D:\Work\thesis\RAPCG-MetaRL\pcg_env\Scripts\python.exe train.py --game zelda --algorithm A2C --timesteps 10000 --checkpoint-freq 2000 --device auto
