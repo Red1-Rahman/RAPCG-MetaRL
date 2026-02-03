@@ -13,10 +13,11 @@ import gym
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'gym-pcgrl'))
 import gym_pcgrl
 
-# Import Sokoban solvability wrapper
+# Import Sokoban utilities and solvability config
 project_root = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, project_root)
-from sokoban_solvability_wrapper import SokobanSolvabilityWrapper
+from sokoban_utils import SokobanSolvabilityWrapper
+from solvability_config import get_solvability_config, print_solvability_config
 
 
 class ResourceAwarePCGRLWrapper(gym.Wrapper):
@@ -176,9 +177,10 @@ class ResourceAwarePCGRLWrapper(gym.Wrapper):
 def make_pcgrl_env(resource_monitor, game='zelda', representation='narrow', 
                    ram_penalty_weight=0.2, cpu_penalty_weight=0.1, 
                    gpu_penalty_weight=0.1, crop_size=None, 
-                   sokoban_unsolvable_penalty=15.0, **kwargs):
+                   sokoban_unsolvable_penalty=25.0, 
+                   use_solvability_config=True, **kwargs):
     """
-    Create a resource-aware PCGRL environment.
+    Create a resource-aware PCGRL environment with solvability optimization.
     
     Args:
         resource_monitor: ResourceMonitor instance for tracking resource usage
@@ -188,11 +190,12 @@ def make_pcgrl_env(resource_monitor, game='zelda', representation='narrow',
         cpu_penalty_weight: Weight for CPU penalty
         gpu_penalty_weight: Weight for GPU penalty
         crop_size: Crop size for observation
-        sokoban_unsolvable_penalty: Penalty for unsolvable Sokoban levels (default: 15.0)
+        sokoban_unsolvable_penalty: Penalty for unsolvable Sokoban levels (default: 25.0)
+        use_solvability_config: Apply tuned solvability reward weights (default: True)
         **kwargs: Additional arguments for the environment
         
     Returns:
-        Gym environment with resource-aware reward shaping
+        Gym environment with resource-aware reward shaping AND solvability optimization
     """
     # gym-pcgrl registers environments as '{game}-{representation}-v0'
     game_name = game.lower()
@@ -203,10 +206,36 @@ def make_pcgrl_env(resource_monitor, game='zelda', representation='narrow',
         # Create environment using registered name
         env = gym.make(env_name)
         
-        # For Sokoban, add solvability wrapper first
+        # Apply solvability-optimized reward weights and parameters
+        if use_solvability_config:
+            config = get_solvability_config(game_name)
+            if config:
+                print(f"  Applying solvability-optimized configuration for {game_name.upper()}")
+                
+                # Adjust reward weights in the problem instance
+                if hasattr(env, '_prob'):
+                    env._prob.adjust_param(
+                        rewards=config['rewards'],
+                        **config['params']
+                    )
+                    print(f"  ✓ Tuned reward weights for maximum solvability")
+                    print(f"    - Regions weight: {config['rewards'].get('regions', 'N/A')} (connectivity)")
+                    if game_name == 'sokoban':
+                        print(f"    - Ratio weight: {config['rewards']['ratio']} (crates = targets)")
+                        print(f"    - Dist-win weight: {config['rewards']['dist-win']} (solvability)")
+                        print(f"    - Sol-length weight: {config['rewards']['sol-length']} (solution quality)")
+                    elif game_name == 'zelda':
+                        print(f"    - Path-length weight: {config['rewards']['path-length']} (player→key→door)")
+                        print(f"    - Nearest-enemy weight: {config['rewards']['nearest-enemy']} (challenge)")
+            else:
+                print(f"  No solvability config found for {game_name}, using defaults")
+        
+        # For Sokoban, add solvability wrapper (double-layer protection)
         if game_name == 'sokoban':
             print(f"  Adding Sokoban solvability wrapper (penalty={sokoban_unsolvable_penalty})")
-            print(f"  ⚠ Unsolvable Sokoban levels are USELESS and will be heavily penalized")
+            print(f"    - Layer 1: Tuned reward weights (dist-win, sol-length)")
+            print(f"    - Layer 2: Unsolvable penalty wrapper (double-check)")
+            print(f"  [WARNING] Unsolvable Sokoban levels will be HEAVILY PENALIZED")
             env = SokobanSolvabilityWrapper(
                 env,
                 unsolvable_penalty=sokoban_unsolvable_penalty,

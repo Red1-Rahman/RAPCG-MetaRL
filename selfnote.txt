@@ -5,3 +5,10 @@ D:\Work\thesis\RAPCG-MetaRL\pcg_env\Scripts\python.exe train.py --game zelda --t
 
 D:\Work\thesis\RAPCG-MetaRL\pcg_env\Scripts\python.exe train.py --game sokoban --algorithm A2C --timesteps 10000 --checkpoint-freq 2000 --device auto
 D:\Work\thesis\RAPCG-MetaRL\pcg_env\Scripts\python.exe train.py --game zelda --algorithm A2C --timesteps 10000 --checkpoint-freq 2000 --device auto
+D:\Work\thesis\RAPCG-MetaRL\pcg_env\Scripts\python.exe train.py --game sokoban --algorithm SAC --timesteps 10000 --checkpoint-freq 2000 --device auto
+
+D:\Work\thesis\RAPCG-MetaRL\pcg_env\Scripts\python.exe inference_timed.py checkpoints/sokoban_PPO_20260129_205715/final_model.zip --game sokoban --n-levels 3 --max-steps 1000 --save-dir generated_levels/sokoban_forward --log-file inference_timing_forward.csv --device auto 2>&1 | Select-Object -First 100
+
+python inference_timed.py checkpoints/sokoban_PPO_20260130_162717/best_model.zip --n-levels 5 --save-dir generated_levels/sokoban_forward_test --log-file inference_timing_forward_test.csv --trust-model
+
+python compare_approaches.py --forward-dir generated_levels/sokoban_forward_v2 --backward-dir generated_levels/sokoban_backward_v2

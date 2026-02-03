@@ -167,7 +167,8 @@ class MetaRLTrainer:
                  checkpoint_freq=1000,
                  log_dir='logs',
                  checkpoint_dir='checkpoints',
-                 sokoban_unsolvable_penalty=25.0):
+                 sokoban_unsolvable_penalty=25.0,
+                 use_solvability_tuning=True):
         """
         Initialize Meta-RL trainer.
         
@@ -198,6 +199,7 @@ class MetaRLTrainer:
         self.n_envs = n_envs
         self.device = device
         self.seed = seed
+        self.use_solvability_tuning = use_solvability_tuning
         self.sokoban_unsolvable_penalty = sokoban_unsolvable_penalty
         
         # Detect GPU availability and adjust device
@@ -254,8 +256,7 @@ class MetaRLTrainer:
             Callable that creates the environment
         """
         def _init():
-            # Pass resource_monitor to enable true resource-aware behavior
-            # The wrapper will now shape rewards based on resource usage
+            # AND apply solvability-optimized reward weights
             env = make_pcgrl_env(
                 resource_monitor=self.resource_monitor,  # CRUCIAL: Enable feedback loop
                 game=self.game,
@@ -263,7 +264,8 @@ class MetaRLTrainer:
                 ram_penalty_weight=0.2,  # Configurable penalty weights
                 cpu_penalty_weight=0.1,
                 gpu_penalty_weight=0.1,
-                sokoban_unsolvable_penalty=self.sokoban_unsolvable_penalty
+                sokoban_unsolvable_penalty=self.sokoban_unsolvable_penalty,
+                use_solvability_config=self.use_solvability_tuning  # Apply tuned weights
             )
             # Don't use Monitor - we have our own logging via TrainingLogger
             if self.seed is not None:
@@ -483,6 +485,8 @@ def main():
                        help='Learning rate')
     parser.add_argument('--sokoban-penalty', type=float, default=25.0,
                        help='Penalty for unsolvable Sokoban levels (default: 25.0 - very strict)')
+    parser.add_argument('--no-solvability-tuning', action='store_true',
+                       help='Disable solvability-optimized reward weights (not recommended)')
     parser.add_argument('--n-envs', type=int, default=1,
                        help='Number of parallel environments')
     parser.add_argument('--device', type=str, default='auto',
@@ -518,7 +522,8 @@ def main():
         experiment_name=args.experiment_name,
         use_gpu_monitoring=not args.no_gpu_monitoring,
         checkpoint_freq=args.checkpoint_freq,
-        sokoban_unsolvable_penalty=args.sokoban_penalty
+        sokoban_unsolvable_penalty=args.sokoban_penalty,
+        use_solvability_tuning=not args.no_solvability_tuning
     )
     
     # Set up environments and model

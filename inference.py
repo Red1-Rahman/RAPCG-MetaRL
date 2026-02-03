@@ -63,7 +63,8 @@ class LevelGenerator:
         self.env = make_pcgrl_env(
             resource_monitor=self.resource_monitor,
             game=game, 
-            representation=representation
+            representation=representation,
+            use_solvability_config=True  # Use tuned weights for inference too
         )
         
         # Load model

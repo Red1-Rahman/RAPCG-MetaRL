@@ -33,9 +33,9 @@ class ResourceMonitor:
                 self.pynvml = pynvml
                 self.gpu_handle = pynvml.nvmlDeviceGetHandleByIndex(0)
                 self.gpu_available = True
-                print("✓ GPU monitoring enabled")
+                print("[OK] GPU monitoring enabled")
             except Exception as e:
-                print(f"⚠ GPU monitoring unavailable: {e}")
+                print(f"[WARNING] GPU monitoring unavailable: {e}")
                 self.gpu_available = False
     
     def get_resources(self) -> Dict[str, float]:
