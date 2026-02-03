@@ -215,7 +215,9 @@ class MetaRLTrainer:
         
         # Set up experiment tracking
         if experiment_name is None:
-            experiment_name = f"{game}_{algorithm}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            # Include device type (CUDA/CPU) in experiment name
+            device_suffix = "CUDA" if self.device == 'cuda' else "CPU"
+            experiment_name = f"{game}_{algorithm}_{device_suffix}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         self.experiment_name = experiment_name
         
         # Initialize monitoring and logging
