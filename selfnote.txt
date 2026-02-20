@@ -12,3 +12,6 @@ D:\Work\thesis\RAPCG-MetaRL\pcg_env\Scripts\python.exe inference_timed.py checkp
 python inference_timed.py checkpoints/sokoban_PPO_20260130_162717/best_model.zip --n-levels 5 --save-dir generated_levels/sokoban_forward_test --log-file inference_timing_forward_test.csv --trust-model
 
 python compare_approaches.py --forward-dir generated_levels/sokoban_forward_v2 --backward-dir generated_levels/sokoban_backward_v2
+
+python train.py --game sokoban --algorithm PPO --timesteps 20000 --device cuda --checkpoint-freq 5000 --n-steps 128 --batch-size 64 --lr 2.5e-4
+inference_timed.py checkpoints/sokoban_PPO_CUDA_20260220_140931/final_model.zip --game sokoban --algorithm PPO --n-levels 20 --max-steps 1000 --save-dir generated_levels/sokoban_PPO_CUDA_20260220_140931 --log-file inference_timing_sokoban_PPO_CUDA_20260220_140931.csv --device cuda --trust-model
