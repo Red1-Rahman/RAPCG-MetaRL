@@ -1,42 +1,109 @@
 # RAPCG-MetaRL
 
-**Resource-Aware Procedural Content Generation with Meta-Reinforcement Learning**
+**Resource-Aware Procedural Content Generation via Meta-Reinforcement Learning**
 
-A framework for training Meta-RL agents to generate procedural game content with dynamic resource adaptation. This project combines gym-pcgrl environments with resource-aware training to optimize content generation within hardware constraints.
+> Published research framework for training Meta-RL agents to generate procedural game content with dynamic hardware adaptation. Evaluated on PCGRL benchmarks (Zelda, Sokoban) using PPO and A2C algorithms on consumer hardware (Intel i5-13500, RTX 3060 Ti, 16GB RAM).
+
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/framework-PyTorch-orange.svg)](https://pytorch.org/)
+[![stable-baselines3](https://img.shields.io/badge/RL-stable--baselines3-green.svg)](https://github.com/DLR-RM/stable-baselines3)
+
+---
+
+## 🎯 Overview
+
+RAPCG-MetaRL integrates real-time hardware telemetry into a reinforcement learning reward signal, creating a feedback loop that teaches PCG agents to balance content quality with computational efficiency. The framework targets heterogeneous gaming platforms — from budget laptops to high-end workstations — without requiring separate builds.
+
+### Key Results (Published in ACM TOG 2025)
+
+| Algorithm | Domain  | Early Reward | Late Reward | Improvement |
+|-----------|---------|-------------|-------------|-------------|
+| PPO       | Zelda   | −8.54       | +11.84      | +20.38 pts  |
+| PPO       | Sokoban | +2.84       | +6.66       | +3.82 pts   |
+| A2C       | Zelda   | −14.6       | −3.0        | +11.6 pts   |
+| A2C       | Sokoban | −1.9        | +3.2        | +5.1 pts    |
+
+Both algorithms maintained CPU usage under 5% and RAM under 65%, with resource-aware penalties remaining at zero — demonstrating operation well within configured hardware thresholds.
+
+---
 
 ## 🎯 Features
 
-- **Meta-RL Training**: PPO and A2C algorithms with stable-baselines3
-- **Resource Monitoring**: Real-time CPU, GPU, and RAM tracking
-- **Dynamic Adaptation**: Automatic complexity adjustment based on resource usage
-- **Multi-Environment**: Support for Zelda, Sokoban, Binary, and custom levels
-- **Content Metrics**: Diversity, complexity, and quality evaluation
-- **VGLC Integration**: Parse and use levels from The Video Game Level Corpus
-- **Comprehensive Logging**: CSV-based training logs with resource tracking
+- **Resource-Aware Reward Shaping**: Real-time CPU/RAM/GPU penalties shape the reward signal, teaching agents to generate content efficiently
+- **Multi-Algorithm Support**: PPO and A2C via stable-baselines3; SAC for continuous action spaces
+- **Dynamic Complexity Adaptation**: Environment complexity scales with resource pressure
+- **Hardware Telemetry**: Asynchronous CPU, RAM, and GPU monitoring via `psutil`/`pynvml`
+- **PCGRL Benchmarks**: Zelda, Sokoban, and Binary environments via gym-pcgrl
+- **Solvability Optimization**: Tuned reward weights for high solvability rates
+- **Comprehensive Logging**: Per-step CSV logs with reward, resource, and content metrics
+- **VGLC Integration**: Parse and analyze levels from The Video Game Level Corpus
+- **Paper Figure Generation**: Publication-ready figures for academic reporting
+
+---
 
 ## 📁 Project Structure
 
 ```
 RAPCG-MetaRL/
-├── train.py                 # Main training script
-├── inference.py             # Level generation script
-├── utils.py                 # Resource monitoring and logging utilities
-├── wrappers/                # Environment wrappers
-│   ├── __init__.py
-│   ├── pcgrl_env.py        # PCGRL environment wrapper
-│   └── helper.py           # VGLC parsing and metrics
-├── test/                    # Test suite
-│   ├── __init__.py
-│   └── test.py             # Comprehensive tests
-├── data/                    # Game level data (VGLC)
-│   ├── SMB.json
-│   └── zelda.json
-├── gym-pcgrl/              # gym-pcgrl submodule
-├── TheVGLC/                # Video Game Level Corpus
-├── logs/                   # Training logs (created during training)
-├── checkpoints/            # Model checkpoints (created during training)
-└── generated_levels/       # Generated levels (created during inference)
+│
+├── Core Scripts
+│   ├── train.py                    # Main training script (PPO/A2C/SAC)
+│   ├── inference.py                # Level generation from trained models
+│   ├── inference_timed.py          # Timed inference with detailed metrics
+│   ├── utils.py                    # ResourceMonitor, TrainingLogger, utilities
+│   ├── maml_trainer.py             # MAML meta-learning trainer (proposed)
+│   ├── rlhf_trainer.py             # RLHF fine-tuning pipeline (proposed)
+│   └── quickstart.py               # Guided demo
+│
+├── Wrappers/
+│   ├── pcgrl_env.py                # ResourceAwarePCGRLWrapper + make_pcgrl_env()
+│   └── helper.py                   # VGLC parsing, content metrics, level I/O
+│
+├── Configuration
+│   ├── config_hardware.py          # Hardware-specific presets (i5-13500 + RTX 3060 Ti)
+│   ├── solvability_config.py       # Per-game reward weight tuning
+│   └── sokoban_utils.py            # Sokoban solvability validation
+│
+├── Test/
+│   └── test/test.py                # Full test suite (5 test categories)
+│
+├── Analysis
+│   ├── generate_paper_figures.py   # ACM TOG paper figure generator
+│   ├── compare_approaches.py       # Forward vs. backward generation comparison
+│   ├── analyze_action_penalties.py # Action-penalty correlation analysis
+│   ├── architecture_diagram.py     # ASCII architecture diagram
+│   └── graph.ipynb / inference_graph.ipynb  # Notebooks for result visualization
+│
+├── Data/
+│   ├── data/SMB.json               # Super Mario Bros levels (VGLC)
+│   └── data/zelda.json             # Zelda levels (VGLC)
+│
+├── Results (created during training/inference)
+│   ├── logs/                       # Training CSVs (per-step metrics)
+│   ├── checkpoints/                # Model checkpoints (.zip)
+│   └── generated_levels/           # Generated level files (.npy, .txt)
+│
+├── Documentation
+│   ├── README.md                   # This file
+│   ├── ARCHITECTURE.md             # System architecture reference
+│   ├── IMPLEMENTATION_SUMMARY.md   # Feature completion checklist
+│   ├── RESOURCE_AWARE_IMPLEMENTATION.md  # Reward shaping details
+│   ├── SOLVABILITY_INTEGRATION.md  # Solvability mechanism docs
+│   ├── HARDWARE_COMPATIBILITY.md   # Hardware tuning guide
+│   └── VERIFICATION_CHECKLIST.md   # Setup verification steps
+│
+├── External Repos (submodules)
+│   ├── gym-pcgrl/                  # PCGRL environments (Khalifa et al.)
+│   ├── pcg_benchmark/              # PCG benchmark suite
+│   └── TheVGLC/                    # Video Game Level Corpus
+│
+├── setup.ps1                       # Windows PowerShell setup script
+├── quickstart_optimized.ps1        # Optimized quickstart for target hardware
+├── Dockerfile                      # Container support
+└── requirements.txt                # Python dependencies
 ```
+
+---
 
 ## 🚀 Quick Start
 
@@ -57,78 +124,81 @@ cd ..
 
 ### 2. Run Tests
 
-Verify your setup:
-
 ```bash
 python test/test.py
 ```
 
-This will test:
-
-- Resource monitoring
-- Training logger
-- VGLC level parsing
-- Content metrics
-- Environment creation
+Expected: 5/5 tests pass (Resource Monitor, Training Logger, VGLC Parsing, Content Metrics, PCGRL Environment).
 
 ### 3. Train a Model
 
-Simple training with default settings (Zelda, PPO):
-
 ```bash
-python train.py --game zelda --timesteps 50000
-```
+# Quick test (10k steps, CPU)
+python train.py --game zelda --timesteps 10000
 
-Advanced training with custom parameters:
+# GPU-accelerated training (matches paper results)
+python train.py --game zelda --timesteps 20000 --device cuda
 
-```bash
-python train.py \
-  --game zelda \
-  --representation narrow \
-  --algorithm PPO \
-  --timesteps 100000 \
-  --n-steps 128 \
-  --batch-size 64 \
-  --lr 2.5e-4 \
-  --device cuda \
-  --experiment-name zelda_experiment_1
-```
+# Sokoban
+python train.py --game sokoban --timesteps 20000 --device cuda
 
-Training with multiple environments (parallel):
-
-```bash
-python train.py \
-  --game sokoban \
-  --n-envs 4 \
-  --timesteps 200000
+# A2C comparison
+python train.py --game zelda --algorithm A2C --timesteps 10000 --device cuda
 ```
 
 ### 4. Generate Levels
 
-Generate levels using a trained model:
-
 ```bash
-python inference.py checkpoints/zelda_PPO_*/final_model.zip \
-  --n-levels 10 \
-  --save-dir generated_levels/zelda
+# Standard inference
+python inference.py checkpoints/zelda_PPO_<timestamp>/final_model.zip --n-levels 10
+
+# Timed inference (with detailed metrics CSV)
+python inference_timed.py checkpoints/zelda_PPO_<timestamp>/final_model.zip \
+  --game zelda --n-levels 20 --log-file inference_timing.csv --device cuda
 ```
 
-With custom settings:
+### 5. Windows PowerShell (Optimized)
+
+```powershell
+# Activate venv and run hardware-optimized config
+.\quickstart_optimized.ps1
+```
+
+---
+
+## 🔧 Training Parameters
+
+| Parameter            | Description                     | Default   |
+|---------------------|---------------------------------|-----------|
+| `--game`            | Game environment                | `zelda`   |
+| `--representation`  | Representation type             | `narrow`  |
+| `--algorithm`       | RL algorithm (PPO/A2C/SAC)      | `PPO`     |
+| `--timesteps`       | Total training steps            | `50000`   |
+| `--n-steps`         | Steps per update                | `128`     |
+| `--batch-size`      | Batch size                      | `64`      |
+| `--lr`              | Learning rate                   | `2.5e-4`  |
+| `--n-envs`          | Parallel environments           | `1`       |
+| `--device`          | Device (`cpu`/`cuda`/`auto`)    | `auto`    |
+| `--checkpoint-freq` | Checkpoint save frequency       | `1000`    |
+| `--no-solvability-tuning` | Disable solvability weights | off    |
+
+### Hardware Presets (from `config_hardware.py`)
 
 ```bash
-python inference.py path/to/model.zip \
-  --game zelda \
-  --representation narrow \
-  --n-levels 5 \
-  --max-steps 1000 \
-  --stochastic
+# Check your hardware compatibility first
+python config_hardware.py
 ```
+
+| Preset         | n_envs | timesteps | batch_size | Use Case               |
+|---------------|--------|-----------|------------|------------------------|
+| `PRESET_FAST`  | 6      | 50000     | 128        | Full training run       |
+| `PRESET_LIGHT` | 4      | 50000     | 64         | Running other apps      |
+
+---
 
 ## 📊 Resource Monitoring
 
-The framework automatically monitors system resources during training:
-
-### CPU, RAM, GPU Usage
+The framework automatically monitors hardware resources at every training step:
 
 ```python
 from utils import ResourceMonitor
@@ -136,243 +206,189 @@ from utils import ResourceMonitor
 monitor = ResourceMonitor(use_gpu=True)
 resources = monitor.get_resources()
 
-print(f"CPU: {resources['cpu_percent']}%")
-print(f"RAM: {resources['ram_percent']}%")
-print(f"GPU: {resources['gpu_mem_percent']}%")
+print(f"CPU:      {resources['cpu_percent']:.1f}%")
+print(f"RAM:      {resources['ram_percent']:.1f}%")
+print(f"GPU Mem:  {resources['gpu_mem_percent']:.1f}%")
+print(f"GPU Util: {resources['gpu_util_percent']:.1f}%")
 ```
 
-### Resource-Aware Training
+### Resource-Aware Reward Shaping
 
-The training script automatically:
+Penalties are subtracted from the reward when usage exceeds thresholds:
 
-- Monitors resources every step
-- Logs resource usage to CSV
-- Adapts environment complexity when under pressure
-- Saves checkpoints with resource snapshots
+```
+R_total = R_quality
+        − 0.2 × max(0, RAM%  − 78%)
+        − 0.1 × max(0, CPU%  − 70%)
+        − 0.1 × max(0, GPU%  − 70%)
+```
+
+In the published training runs, all penalties remained at zero — indicating the system operated well within hardware limits throughout training.
+
+---
 
 ## 📈 Training Logs
 
-All training runs generate detailed CSV logs:
+All runs generate detailed CSV logs in `logs/`:
 
 ```
-logs/
-└── zelda_PPO_20231208_143022.csv
-    ├── episode
-    ├── step
-    ├── reward
-    ├── timestamp
-    ├── cpu_percent
-    ├── ram_percent
-    ├── gpu_util_percent
-    ├── gpu_mem_percent
-    ├── content_diversity
-    └── content_complexity
+logs/zelda_PPO_YYYYMMDD_HHMMSS.csv
+  ├── episode, step, reward, shaped_reward
+  ├── ram_penalty, cpu_penalty, gpu_penalty
+  ├── cpu_percent, ram_percent
+  ├── gpu_util_percent, gpu_mem_percent
+  └── content_diversity, content_complexity
 ```
 
-Analyze logs with pandas:
+Analyze with pandas:
 
 ```python
 import pandas as pd
-import matplotlib.pyplot as plt
-
-# Load logs
-df = pd.read_csv('logs/zelda_PPO_20231208_143022.csv')
-
-# Plot reward over time
-plt.plot(df['step'], df['reward'])
-plt.xlabel('Step')
-plt.ylabel('Reward')
-plt.show()
-
-# Analyze resource usage
-print(f"Mean GPU usage: {df['gpu_mem_percent'].mean():.1f}%")
+df = pd.read_csv('logs/zelda_PPO_20260220_140931.csv')
+print(df[['episode','reward','ram_percent']].tail(20))
 ```
+
+---
 
 ## 🎮 Supported Environments
 
 ### Games
-
-- **Zelda**: Top-down dungeon generation
-- **Sokoban**: Puzzle box-pushing levels
-- **Binary**: Simple binary pattern generation
+| Game    | Grid      | Goal                                      |
+|---------|-----------|-------------------------------------------|
+| Zelda   | 16×16     | Dungeon with valid key→door→player path   |
+| Sokoban | 10×10     | Solvable box-pushing puzzles (NP-hard)    |
+| Binary  | Varies    | Connected binary pattern generation        |
 
 ### Representations
+- **Narrow**: Agent edits one tile at a time (default)
+- **Wide**: Agent selects position and tile type simultaneously
+- **Turtle**: Agent moves through the map and places tiles
 
-- **Narrow**: Agent edits one tile at a time
-- **Wide**: Agent selects position and tile type
-- **Turtle**: Agent moves and places tiles
+### Algorithms
+- ✅ **PPO** — Best overall performance (recommended)
+- ✅ **A2C** — Lower sample efficiency, more predictable learning curves
+- ✅ **SAC** — Continuous action spaces only
 
-## 🔧 Configuration
-
-### Training Parameters
-
-| Parameter           | Description            | Default  |
-| ------------------- | ---------------------- | -------- |
-| `--game`            | Game environment       | `zelda`  |
-| `--representation`  | Representation type    | `narrow` |
-| `--algorithm`       | RL algorithm (PPO/A2C) | `PPO`    |
-| `--timesteps`       | Total training steps   | `50000`  |
-| `--n-steps`         | Steps per update       | `128`    |
-| `--batch-size`      | Batch size             | `64`     |
-| `--lr`              | Learning rate          | `2.5e-4` |
-| `--n-envs`          | Parallel environments  | `1`      |
-| `--device`          | Device (cpu/cuda/auto) | `auto`   |
-| `--checkpoint-freq` | Checkpoint frequency   | `1000`   |
-
-### Resource Thresholds
-
-Modify in `utils.py`:
-
-```python
-thresholds = {
-    'cpu_percent': 90.0,
-    'ram_percent': 90.0,
-    'gpu_mem_percent': 85.0,
-    'gpu_util_percent': 85.0,
-}
-```
+---
 
 ## 🧪 Development
 
-### Running Tests
+### Test Suite
 
 ```bash
 # Run all tests
 python test/test.py
 
-# Test specific component
+# Test individual components
 python -c "from test.test import test_environment; test_environment()"
+python -c "from utils import ResourceMonitor; m = ResourceMonitor(); print(m.get_resources())"
 ```
 
-### Adding Custom Environments
+### Generate Paper Figures
 
-1. Add environment wrapper in `wrappers/pcgrl_env.py`
-2. Update `make_pcgrl_env()` function
-3. Add tests in `test/test.py`
+```bash
+# Procedural demo (no trained model required)
+python generate_paper_figures.py --demo
 
-### Custom Metrics
-
-Add custom content metrics in `wrappers/helper.py`:
-
-```python
-def custom_metric(level: np.ndarray) -> float:
-    """Calculate custom metric."""
-    # Your implementation
-    return score
+# From trained models
+python generate_paper_figures.py --model \
+  --zelda-model checkpoints/zelda_PPO_.../final_model.zip \
+  --sokoban-model checkpoints/sokoban_PPO_.../final_model.zip
 ```
 
-## 📚 VGLC Integration
+### Compare Approaches
 
-Use levels from The Video Game Level Corpus:
+```bash
+python compare_approaches.py \
+  --forward-dir generated_levels/sokoban_forward \
+  --backward-dir generated_levels/sokoban_backward
+```
+
+### VGLC Integration
 
 ```python
 from wrappers.helper import load_vglc_levels, calculate_content_metrics
 
-# Load levels
 levels = load_vglc_levels('data', 'SMB')
-
-# Analyze a level
 metrics = calculate_content_metrics(levels[0])
-print(f"Diversity: {metrics['diversity']:.3f}")
+print(f"Diversity:  {metrics['diversity']:.3f}")
 print(f"Complexity: {metrics['complexity']:.3f}")
 ```
 
-## 🎯 Meta-RL (Future Work)
-
-The current implementation provides a solid foundation for Meta-RL. Future enhancements:
-
-### MAML (Model-Agnostic Meta-Learning)
-
-```python
-# Train on multiple tasks
-tasks = ['zelda', 'sokoban', 'binary']
-
-for task in tasks:
-    env = make_pcgrl_env(task)
-    # Inner loop: adapt to task
-    # Outer loop: update meta-parameters
-```
-
-### PEARL (Probabilistic Embeddings for Actor-Critic RL)
-
-```python
-# Context encoder for task inference
-# Train on diverse level distributions
-# Fast adaptation with few samples
-```
-
-## 📦 Dependencies
-
-Core requirements:
-
-- Python 3.8+
-- PyTorch 1.10+
-- stable-baselines3
-- gym
-- numpy
-- pandas
-- psutil
-- pynvml (for GPU monitoring)
-
-See `requirements.txt` for full list.
+---
 
 ## 🐛 Troubleshooting
 
-### GPU Monitoring Not Working
+| Issue | Solution |
+|-------|----------|
+| GPU not detected | `pip install nvidia-ml-py3` or use `--device cpu` |
+| `gym-pcgrl` not found | `cd gym-pcgrl && pip install -e .` |
+| Import errors | `$env:PYTHONPATH += ";D:\Work\thesis\RAPCG-MetaRL"` (PowerShell) |
+| Out of memory | `--batch-size 32 --n-envs 1` |
+| Training too slow | Enable CUDA: `--device cuda` |
 
-If GPU monitoring fails:
+---
 
-```bash
-pip install nvidia-ml-py3
+## 🏗️ Architecture
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for full system diagrams.
+
+Core component hierarchy:
+
+```
+train.py / inference.py
+    └── MetaRLTrainer / LevelGenerator
+            └── make_pcgrl_env()
+                    └── ResourceAwarePCGRLWrapper (gym.Wrapper)
+                            ├── gym-pcgrl (Zelda-v0, Sokoban-v0, ...)
+                            └── ResourceMonitor (psutil / pynvml)
 ```
 
-Or disable GPU monitoring:
+### Implementation Status
 
-```bash
-python train.py --no-gpu-monitoring
-```
+| Component                        | Status       |
+|----------------------------------|--------------|
+| PPO/A2C Training Pipeline        | ✅ Implemented |
+| Resource-Aware Reward Shaping    | ✅ Implemented |
+| Hardware Telemetry (psutil/pynvml)| ✅ Implemented |
+| Solvability Optimization         | ✅ Implemented |
+| MAML Meta-RL Controller          | 🔄 Proposed   |
+| Adaptive Batch Scheduling        | 🔄 Proposed   |
+| Hybrid PCG Ensemble              | 🔄 Proposed   |
+| Unity/Unreal Integration         | 🔄 Proposed   |
 
-### Environment Creation Fails
+---
 
-Make sure gym-pcgrl is installed:
+## 📦 Dependencies
 
-```bash
-cd gym-pcgrl
-pip install -e .
-```
+**Core (Required)**
+- Python 3.8+
+- PyTorch 2.1+
+- stable-baselines3
+- gym
+- numpy, pandas, psutil, pillow
 
-### Import Errors
+**Optional**
+- `nvidia-ml-py3` — GPU monitoring
+- `jupyter` — Notebooks
+- `matplotlib` — Figure generation
 
-Add project to Python path:
+See [requirements.txt](requirements.txt) for full list.
 
-```bash
-export PYTHONPATH="${PYTHONPATH}:/path/to/RAPCG-MetaRL"
-```
-
-Or on Windows PowerShell:
-
-```powershell
-$env:PYTHONPATH += ";D:\Work\thesis\RAPCG-MetaRL"
-```
-
-### Out of Memory
-
-Reduce batch size and parallel environments:
-
-```bash
-python train.py --batch-size 32 --n-envs 1
-```
+---
 
 ## 📖 Citation
 
 If you use this framework, please cite:
 
 ```bibtex
-@software{rapcg_metarl,
-  title={RAPCG-MetaRL: Resource-Aware Procedural Content Generation with Meta-RL},
-  author={Your Name},
-  year={2024},
-  url={https://github.com/yourusername/RAPCG-MetaRL}
+@article{rahman2025rapcg,
+  title={Resource-Aware Procedural Content Generation via Meta-Reinforcement
+         Learning for Heterogeneous Gaming Platforms},
+  author={Rahman, Redwan and Kabir, Md. Alamgir},
+  journal={ACM Transactions on Graphics},
+  year={2025},
+  publisher={ACM}
 }
 ```
 
@@ -383,60 +399,31 @@ Please also cite the foundational work this project builds upon:
   title={PCGRL: Procedural Content Generation via Reinforcement Learning},
   author={Khalifa, Ahmed and Bontrager, Philip and Earle, Sam and Togelius, Julian},
   booktitle={Artificial Intelligence and Interactive Digital Entertainment},
-  volume={16},
-  number={1},
-  pages={95--101},
-  year={2020},
-  organization={AAAI}
-}
-
-@inproceedings{khalifa2025pcgbenchmark,
-  title={The Procedural Content Generation Benchmark: An Open-source Testbed for Generative Challenges in Games},
-  author={Khalifa, Ahmed and Gallota, Roberto and Barthet, Matthew and Liapis, Antonios and Togelius, Julian and Yannakakis, Georgios N.},
-  booktitle={Foundations of Digital Games Conference},
-  year={2025},
-  publisher={ACM}
-}
-
-@misc{summerville2016vglc,
-  title={The Video Game Level Corpus},
-  author={Summerville, Adam and Snodgrass, Sam and Mateas, Michael and Ontañón, Santiago},
-  year={2016},
-  eprint={1606.07487},
-  archivePrefix={arXiv},
-  primaryClass={cs.AI},
-  url={https://doi.org/10.48550/arXiv.1606.07487}
+  volume={16}, number={1}, pages={95--101},
+  year={2020}, organization={AAAI}
 }
 ```
 
+---
+
 ## 🙏 Acknowledgments
 
-This project builds upon several excellent research works and open-source projects:
-
-- **[gym-pcgrl](https://github.com/amidos2006/gym-pcgrl)** - Ahmed Khalifa et al.'s foundational PCGRL framework
-- **[PCG Benchmark](https://github.com/amidos2006/gym-pcgrl)** - Comprehensive testbed for PCG challenges
-- **[The Video Game Level Corpus (VGLC)](https://github.com/TheVGLC/TheVGLC)** - Large-scale level dataset
-- **[stable-baselines3](https://github.com/DLR-RM/stable-baselines3)** - High-quality RL algorithm implementations
-- **[OpenAI Gym](https://github.com/openai/gym)** - Standard RL environment interface
+- **[gym-pcgrl](https://github.com/amidos2006/gym-pcgrl)** — Ahmed Khalifa et al.'s foundational PCGRL framework
+- **[stable-baselines3](https://github.com/DLR-RM/stable-baselines3)** — High-quality RL implementations
+- **[The Video Game Level Corpus (VGLC)](https://github.com/TheVGLC/TheVGLC)** — Level dataset
+- **[PCG Benchmark](https://github.com/amidos2006/gym-pcgrl)** — PCG evaluation testbed
 
 ## 📄 License
 
-This project is licensed under the MIT License - see LICENSE file for details.
-
-## 🤝 Contributing
-
-Contributions welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+MIT License — see [LICENSE](LICENSE) for details.
 
 ## 📧 Contact
 
-For questions or issues, please open a GitHub issue.
+Redwan Rahman — rahman22205101127@diu.edu.bd  
+Department of Computer Science and Engineering, Daffodil International University
+
+Code: <https://github.com/Red1-Rahman/RAPCG-MetaRL>
 
 ---
 
-**Happy Level Generating! 🎮✨**
+*RAPCG-MetaRL — Resource-Aware PCG that adapts to your hardware. 🎮*
