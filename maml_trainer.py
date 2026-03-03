@@ -29,13 +29,42 @@ from utils import ResourceMonitor, TrainingLogger, create_checkpoint_dir
 from wrappers.pcgrl_env import make_pcgrl_env
 
 import gym
-from gym.wrappers import FlattenObservation
+from gym import spaces
 
 try:
     from stable_baselines3.common.vec_env import DummyVecEnv
 except ImportError:
     print("Error: stable-baselines3 not installed. Install with: pip install stable-baselines3")
     sys.exit(1)
+
+
+class DictFlattenWrapper(gym.Wrapper):
+    """Flatten a Dict observation space into a 1-D Box (old-gym compatible)."""
+
+    def __init__(self, env):
+        super().__init__(env)
+        assert isinstance(env.observation_space, gym.spaces.Dict)
+        self._keys = sorted(env.observation_space.spaces.keys())
+        low_parts, high_parts = [], []
+        for k in self._keys:
+            sp = env.observation_space.spaces[k]
+            low_parts.append(np.asarray(sp.low).flatten())
+            high_parts.append(np.asarray(sp.high).flatten())
+        low = np.concatenate(low_parts).astype(np.float32)
+        high = np.concatenate(high_parts).astype(np.float32)
+        self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
+
+    def _flatten(self, obs):
+        parts = [np.asarray(obs[k], dtype=np.float32).flatten() for k in self._keys]
+        return np.concatenate(parts)
+
+    def reset(self, **kwargs):
+        obs = self.env.reset(**kwargs)
+        return self._flatten(obs)
+
+    def step(self, action):
+        obs, reward, done, info = self.env.step(action)
+        return self._flatten(obs), reward, done, info
 
 
 # ===========================================================================
@@ -131,7 +160,7 @@ class TaskDistribution:
                     pass  # Some envs may not support all params
             # Flatten Dict observation space to a 1-D vector
             if isinstance(env.observation_space, gym.spaces.Dict):
-                env = FlattenObservation(env)
+                env = DictFlattenWrapper(env)
             return env
         return DummyVecEnv([_make])
 

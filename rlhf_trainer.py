@@ -32,7 +32,36 @@ from wrappers.pcgrl_env import make_pcgrl_env
 from wrappers.helper import calculate_content_metrics
 
 import gym
-from gym.wrappers import FlattenObservation
+from gym import spaces
+
+
+class DictFlattenWrapper(gym.Wrapper):
+    """Flatten a Dict observation space into a 1-D Box (old-gym compatible)."""
+
+    def __init__(self, env):
+        super().__init__(env)
+        assert isinstance(env.observation_space, gym.spaces.Dict)
+        self._keys = sorted(env.observation_space.spaces.keys())
+        low_parts, high_parts = [], []
+        for k in self._keys:
+            sp = env.observation_space.spaces[k]
+            low_parts.append(np.asarray(sp.low).flatten())
+            high_parts.append(np.asarray(sp.high).flatten())
+        low = np.concatenate(low_parts).astype(np.float32)
+        high = np.concatenate(high_parts).astype(np.float32)
+        self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
+
+    def _flatten(self, obs):
+        parts = [np.asarray(obs[k], dtype=np.float32).flatten() for k in self._keys]
+        return np.concatenate(parts)
+
+    def reset(self, **kwargs):
+        obs = self.env.reset(**kwargs)
+        return self._flatten(obs)
+
+    def step(self, action):
+        obs, reward, done, info = self.env.step(action)
+        return self._flatten(obs), reward, done, info
 
 try:
     from stable_baselines3 import PPO
@@ -71,7 +100,7 @@ def generate_levels(game: str = 'zelda',
                          resource_monitor=resource_monitor)
     # Flatten Dict observation space to 1-D vector
     if isinstance(env.observation_space, gym.spaces.Dict):
-        env = FlattenObservation(env)
+        env = DictFlattenWrapper(env)
 
     model = PPO.load(model_path, device=device) if model_path else None
 
@@ -594,7 +623,7 @@ class RLHFTrainer:
         tmp_env = make_pcgrl_env(game=game, representation=representation,
                                  resource_monitor=self.resource_monitor)
         if isinstance(tmp_env.observation_space, gym.spaces.Dict):
-            tmp_env = FlattenObservation(tmp_env)
+            tmp_env = DictFlattenWrapper(tmp_env)
         self.input_dim = int(np.prod(tmp_env.observation_space.shape))
         tmp_env.close()
 
@@ -692,7 +721,7 @@ class RLHFTrainer:
             )
             # Flatten Dict observation space
             if isinstance(base.observation_space, gym.spaces.Dict):
-                base = FlattenObservation(base)
+                base = DictFlattenWrapper(base)
             return RLHFRewardWrapper(
                 base, reward_model,
                 rlhf_weight=self.rlhf_weight,
