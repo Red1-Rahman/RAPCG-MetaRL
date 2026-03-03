@@ -28,6 +28,9 @@ sys.path.append(os.path.join(project_root, 'gym-pcgrl'))
 from utils import ResourceMonitor, TrainingLogger, create_checkpoint_dir
 from wrappers.pcgrl_env import make_pcgrl_env
 
+import gym
+from gym.wrappers import FlattenObservation
+
 try:
     from stable_baselines3.common.vec_env import DummyVecEnv
 except ImportError:
@@ -126,6 +129,9 @@ class TaskDistribution:
                         )
                 except Exception:
                     pass  # Some envs may not support all params
+            # Flatten Dict observation space to a 1-D vector
+            if isinstance(env.observation_space, gym.spaces.Dict):
+                env = FlattenObservation(env)
             return env
         return DummyVecEnv([_make])
 
@@ -469,10 +475,13 @@ class MAMLTrainer:
 
         # Lazy init policy from env shapes
         if self.policy is None:
-            obs_dim = int(np.prod(env.observation_space.shape))
-            action_dim = (env.action_space.n
-                          if hasattr(env.action_space, 'n')
-                          else int(np.prod(env.action_space.shape)))
+            # DummyVecEnv stores spaces in .observation_space / .action_space
+            obs_space = env.observation_space
+            act_space = env.action_space
+            obs_dim = int(np.prod(obs_space.shape))
+            action_dim = (act_space.n
+                          if hasattr(act_space, 'n')
+                          else int(np.prod(act_space.shape)))
             self._init_policy(obs_dim, action_dim)
 
         # Clone current parameters
@@ -516,11 +525,10 @@ class MAMLTrainer:
         Returns:
             Average meta-loss across tasks
         """
-        self.meta_optimizer.zero_grad()
         meta_loss = torch.tensor(0.0, device=self.device, requires_grad=True)
 
         for task in tasks:
-            # Inner loop: adapt
+            # Inner loop: adapt (also lazily initializes policy on first call)
             adapted_params, _ = self.inner_loop(task)
 
             # Evaluate adapted params on fresh trajectories from same task
@@ -534,6 +542,7 @@ class MAMLTrainer:
             env.close()
 
         # Meta gradient step
+        self.meta_optimizer.zero_grad()
         meta_loss.backward()
         torch.nn.utils.clip_grad_norm_(self.policy.parameters(), max_norm=0.5)
         self.meta_optimizer.step()

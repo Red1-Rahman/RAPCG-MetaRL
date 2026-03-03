@@ -32,6 +32,7 @@ from wrappers.pcgrl_env import make_pcgrl_env
 from wrappers.helper import calculate_content_metrics
 
 import gym
+from gym.wrappers import FlattenObservation
 
 try:
     from stable_baselines3 import PPO
@@ -68,6 +69,9 @@ def generate_levels(game: str = 'zelda',
     resource_monitor = ResourceMonitor(use_gpu=(device == 'cuda'))
     env = make_pcgrl_env(game=game, representation=representation,
                          resource_monitor=resource_monitor)
+    # Flatten Dict observation space to 1-D vector
+    if isinstance(env.observation_space, gym.spaces.Dict):
+        env = FlattenObservation(env)
 
     model = PPO.load(model_path, device=device) if model_path else None
 
@@ -589,6 +593,8 @@ class RLHFTrainer:
         # Determine input dimension from a temporary env
         tmp_env = make_pcgrl_env(game=game, representation=representation,
                                  resource_monitor=self.resource_monitor)
+        if isinstance(tmp_env.observation_space, gym.spaces.Dict):
+            tmp_env = FlattenObservation(tmp_env)
         self.input_dim = int(np.prod(tmp_env.observation_space.shape))
         tmp_env.close()
 
@@ -684,6 +690,9 @@ class RLHFTrainer:
                 cpu_penalty_weight=0.1,
                 gpu_penalty_weight=0.1,
             )
+            # Flatten Dict observation space
+            if isinstance(base.observation_space, gym.spaces.Dict):
+                base = FlattenObservation(base)
             return RLHFRewardWrapper(
                 base, reward_model,
                 rlhf_weight=self.rlhf_weight,
