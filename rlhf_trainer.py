@@ -404,7 +404,7 @@ class RewardModelTrainer:
             for i in range(0, len(shuffled), batch_size):
                 bi = shuffled[i:i + batch_size]
                 pred = self.reward_model.predict_preference(
-                    levels_a[bi], levels_b[bi]).squeeze()
+                    levels_a[bi], levels_b[bi]).squeeze(-1)
                 loss = nn.functional.binary_cross_entropy(pred, labels[bi])
 
                 self.optimizer.zero_grad()
@@ -418,7 +418,7 @@ class RewardModelTrainer:
             self.reward_model.eval()
             with torch.no_grad():
                 v_pred = self.reward_model.predict_preference(
-                    levels_a[val_idx], levels_b[val_idx]).squeeze()
+                    levels_a[val_idx], levels_b[val_idx]).squeeze(-1)
                 v_loss = nn.functional.binary_cross_entropy(
                     v_pred, labels[val_idx]).item()
 
