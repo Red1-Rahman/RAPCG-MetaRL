@@ -23,3 +23,5 @@ inference_timed.py checkpoints\zelda_PPO_CUDA_20260228_113105\final_model.zip --
 python rlhf_trainer.py --game sokoban --synthetic --n-levels 5 --n-comparisons 10 --timesteps 1000 --reward-epochs 20 --device cuda
 
 python maml_trainer.py --games sokoban --representations narrow --iterations 2 --meta-batch 1 --inner-steps 1 --n-trajectories 32 --device cuda
+
+python3.10 inference_timed.py checkpoints/zelda_PPO_CUDA_20260228_113105/final_model.zip --game zelda --algorithm PPO --n-levels 20 --max-steps 500 --save-dir generated_levels/zelda_PPO_AMD_20260228_113105 --log-file inference_timing_zelda_PPO_AMD_20260228_113105.csv --device cpu --trust-model
