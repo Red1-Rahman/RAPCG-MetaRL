@@ -1,3 +1,4 @@
+# wrappers/pcgrl_env.py
 """
 Resource-Aware PCGRL Environment Wrapper
 Wraps gym-pcgrl environments with dynamic resource adaptation.

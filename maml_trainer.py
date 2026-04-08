@@ -1,3 +1,4 @@
+# maml_trainer.py
 """
 MAML (Model-Agnostic Meta-Learning) for RAPCG-MetaRL
 Enables fast adaptation to new PCG tasks with few gradient steps.
@@ -5,9 +6,9 @@ Enables fast adaptation to new PCG tasks with few gradient steps.
 Algorithm (Finn et al., 2017):
     1. Sample batch of tasks T_i from task distribution
     2. For each task T_i:
-       a. Inner loop: θ'_i = θ - α∇_θ L_{T_i}(θ)   (adapt)
-       b. Compute loss L_{T_i}(θ'_i) on adapted params
-    3. Outer loop: θ = θ - β∇_θ Σ_i L_{T_i}(θ'_i)    (meta-update)
+       a. Inner loop: theta'_i = theta - alpha * grad_theta L_{T_i}(theta)   (adapt)
+       b. Compute loss L_{T_i}(theta'_i) on adapted params
+    3. Outer loop: theta = theta - beta * grad_theta * Sum_i L_{T_i}(theta'_i)    (meta-update)
 """
 import os
 import sys
@@ -116,7 +117,13 @@ class TaskDistribution:
         tasks = []
         for _ in range(n_tasks):
             game = fixed_game or np.random.choice(self.games)
-            representation = np.random.choice(self.representations)
+            
+            # Filter representations by game (wide action space incompatible with current policy)
+            valid_reps = self.representations
+            if game == 'sokoban':
+                valid_reps = [r for r in self.representations if r != 'wide']
+            
+            representation = np.random.choice(valid_reps)
 
             # Sample reward weight variation
             variations = self._reward_variations.get(game, [{}])
@@ -288,11 +295,31 @@ def collect_trajectories(env, policy: MAMLPolicy, n_steps: int = 128,
 
     obs = env.reset()
 
-    for _ in range(n_steps):
+    for step_idx in range(n_steps):
         obs_t = torch.FloatTensor(obs).to(device)
         if obs_t.dim() == 1:
             obs_t = obs_t.unsqueeze(0)
         obs_flat = obs_t.reshape(obs_t.shape[0], -1)
+
+        # Debug: Check observation shape on first iteration
+        if step_idx == 0 and n_steps > 0 and params is not None:
+            # Get expected input dimension from policy weights
+            for name, p in params.items():
+                if 'actor' in name and 'weight' in name:
+                    expected_dim = p.shape[-1]
+                    if obs_flat.shape[-1] != expected_dim:
+                        print(f"[WARNING] Observation dimension mismatch!")
+                        print(f"  Observation shape: {obs_flat.shape}")
+                        print(f"  Expected input dim: {expected_dim}")
+                        print(f"  Observation (batched): {obs_flat.shape[0]}, features: {obs_flat.shape[-1]}")
+                        print(f"  First weight matrix shape: {p.shape}")
+                        
+                        # PAD observation if too small
+                        if obs_flat.shape[-1] < expected_dim:
+                            padding = expected_dim - obs_flat.shape[-1]
+                            obs_flat = torch.cat([obs_flat, torch.zeros(obs_flat.shape[0], padding, device=device)], dim=-1)
+                            print(f"  -> Padded observation to {obs_flat.shape}")
+                    break
 
         with torch.no_grad():
             if params is not None:
@@ -420,7 +447,7 @@ class MAMLTrainer:
         Args:
             games: List of games to draw tasks from
             representations: List of representations to use
-            meta_lr: Outer loop learning rate (β)
+            meta_lr: Outer loop learning rate (beta)
             inner_lr: Inner loop learning rate (α)
             inner_steps: Gradient steps in inner loop (K)
             meta_batch_size: Tasks per meta-update
@@ -470,8 +497,8 @@ class MAMLTrainer:
         print(f"MAML Trainer Initialized")
         print(f"{'=' * 60}")
         print(f"  Games          : {games or ['zelda', 'sokoban', 'binary']}")
-        print(f"  Meta LR (β)    : {meta_lr}")
-        print(f"  Inner LR (α)   : {inner_lr}")
+        print(f"  Meta LR (beta) : {meta_lr}")
+        print(f"  Inner LR (alpha): {inner_lr}")
         print(f"  Inner Steps (K): {inner_steps}")
         print(f"  Meta Batch Size: {meta_batch_size}")
         print(f"  First-order    : {first_order}")
@@ -695,7 +722,7 @@ if __name__ == '__main__':
                         default=['narrow', 'wide', 'turtle'],
                         help='Representation types')
     parser.add_argument('--meta-lr', type=float, default=1e-3,
-                        help='Meta learning rate (outer loop, β)')
+                        help='Meta learning rate (outer loop, beta)')
     parser.add_argument('--inner-lr', type=float, default=0.01,
                         help='Inner loop learning rate (α)')
     parser.add_argument('--inner-steps', type=int, default=5,

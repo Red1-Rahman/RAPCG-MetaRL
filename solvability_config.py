@@ -1,3 +1,4 @@
+# solvability_config.py
 """
 Solvability Configuration for RAPCG-MetaRL
 Tuned reward weights that emphasize solvability while maintaining resource awareness.

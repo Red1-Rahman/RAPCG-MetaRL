@@ -1,3 +1,4 @@
+# utils.py
 """
 RAPCG-MetaRL Utilities
 Resource monitoring, logging, and training utilities.
@@ -145,7 +146,7 @@ class TrainingLogger:
         self.total_steps = 0
         self.start_time = time.time()
         
-        print(f"✓ Logger initialized: {self.log_file}")
+        print(f"[OK] Logger initialized: {self.log_file}")
     
     def log_step(self, reward: float, resources: Dict[str, float], 
                   content_metrics: Optional[Dict[str, float]] = None,
@@ -219,7 +220,7 @@ class TrainingLogger:
         
         df = pd.DataFrame(data)
         df.to_csv(self.log_file, index=False)
-        print(f"✓ Logs saved to {self.log_file} ({len(df)} steps)")
+        print(f"[OK] Logs saved to {self.log_file} ({len(df)} steps)")
     
     def get_stats(self) -> Dict[str, float]:
         """

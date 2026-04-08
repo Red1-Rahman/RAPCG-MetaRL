@@ -1,3 +1,4 @@
+# train.py
 """
 RAPCG-MetaRL Training Script
 Train Meta-RL agents for resource-aware procedural content generation.

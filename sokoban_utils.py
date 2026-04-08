@@ -1,3 +1,4 @@
+# sokoban_utils.py
 """
 Comprehensive Sokoban level validation and solvability utilities.
 
