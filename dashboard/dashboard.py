@@ -809,7 +809,7 @@ with tab_levels:
                     # Try PNG first
                     png_path = fpath.replace(".npy", ".png")
                     if Path(png_path).exists():
-                        st.image(png_path, use_column_width=True)
+                        st.image(png_path, width="stretch")
                     else:
                         # Render as ASCII grid
                         html = render_level_html(level)
