@@ -12,6 +12,7 @@ The learned reward model is blended with the existing resource-aware
 environment reward so the agent optimizes BOTH hardware efficiency
 and human-preferred level quality.
 """
+
 import os
 import sys
 import json
@@ -26,7 +27,7 @@ from pathlib import Path
 # Project paths
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
-sys.path.append(os.path.join(project_root, 'gym-pcgrl'))
+sys.path.append(os.path.join(project_root, "gym-pcgrl"))
 
 from utils import ResourceMonitor, TrainingLogger, create_checkpoint_dir
 from wrappers.pcgrl_env import make_pcgrl_env
@@ -64,13 +65,16 @@ class DictFlattenWrapper(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
         return self._flatten(obs), reward, done, info
 
+
 try:
     from stable_baselines3 import PPO
     from stable_baselines3.common.vec_env import DummyVecEnv
     from stable_baselines3.common.callbacks import BaseCallback
 except ImportError:
-    print("Error: stable-baselines3 not installed. "
-          "Install with: pip install stable-baselines3")
+    print(
+        "Error: stable-baselines3 not installed. "
+        "Install with: pip install stable-baselines3"
+    )
     sys.exit(1)
 
 
@@ -78,11 +82,14 @@ except ImportError:
 # Phase 1 — Level Generation for Feedback
 # ===========================================================================
 
-def generate_levels(game: str = 'zelda',
-                    representation: str = 'narrow',
-                    n_levels: int = 50,
-                    model_path: Optional[str] = None,
-                    device: str = 'cpu') -> List[np.ndarray]:
+
+def generate_levels(
+    game: str = "zelda",
+    representation: str = "narrow",
+    n_levels: int = 50,
+    model_path: Optional[str] = None,
+    device: str = "cpu",
+) -> List[np.ndarray]:
     """
     Generate levels using an existing policy (or random actions).
 
@@ -96,9 +103,10 @@ def generate_levels(game: str = 'zelda',
     Returns:
         List of level arrays (numpy)
     """
-    resource_monitor = ResourceMonitor(use_gpu=(device == 'cuda'))
-    env = make_pcgrl_env(game=game, representation=representation,
-                         resource_monitor=resource_monitor)
+    resource_monitor = ResourceMonitor(use_gpu=(device == "cuda"))
+    env = make_pcgrl_env(
+        game=game, representation=representation, resource_monitor=resource_monitor
+    )
     # Flatten Dict observation space to 1-D vector
     if isinstance(env.observation_space, gym.spaces.Dict):
         env = DictFlattenWrapper(env)
@@ -119,13 +127,13 @@ def generate_levels(game: str = 'zelda',
             steps += 1
 
         # Extract level representation
-        if hasattr(env, 'unwrapped') and hasattr(env.unwrapped, '_rep'):
+        if hasattr(env, "unwrapped") and hasattr(env.unwrapped, "_rep"):
             level = env.unwrapped._rep._map.copy()
         elif isinstance(obs, np.ndarray) and obs.ndim >= 2:
             level = obs[:, :, 0] if obs.ndim == 3 else obs
         else:
             side = max(1, int(np.sqrt(obs.size)))
-            level = obs.flatten()[:side * side].reshape(side, side)
+            level = obs.flatten()[: side * side].reshape(side, side)
 
         levels.append(level)
         if (i + 1) % 10 == 0:
@@ -140,6 +148,7 @@ def generate_levels(game: str = 'zelda',
 # Phase 2 — Preference Collection
 # ===========================================================================
 
+
 class PreferenceCollector:
     """
     Collects and persists human preference labels.
@@ -147,7 +156,7 @@ class PreferenceCollector:
         preference ∈ {0.0: A preferred, 1.0: B preferred, 0.5: tie}
     """
 
-    def __init__(self, save_path: str = 'data/preferences'):
+    def __init__(self, save_path: str = "data/preferences"):
         self.save_path = save_path
         os.makedirs(save_path, exist_ok=True)
         self.preferences: List[Dict] = []
@@ -155,21 +164,26 @@ class PreferenceCollector:
 
     # ----- persistence -----
     def _load_existing(self):
-        pref_file = os.path.join(self.save_path, 'preferences.json')
+        pref_file = os.path.join(self.save_path, "preferences.json")
         if os.path.exists(pref_file):
-            with open(pref_file, 'r') as f:
+            with open(pref_file, "r") as f:
                 self.preferences = json.load(f)
             print(f"[OK] Loaded {len(self.preferences)} existing preferences")
 
     def save(self):
-        pref_file = os.path.join(self.save_path, 'preferences.json')
-        with open(pref_file, 'w') as f:
+        pref_file = os.path.join(self.save_path, "preferences.json")
+        with open(pref_file, "w") as f:
             json.dump(self.preferences, f, indent=2, default=str)
         print(f"[OK] Saved {len(self.preferences)} preferences to {pref_file}")
 
     # ----- add data -----
-    def add_preference(self, level_a: np.ndarray, level_b: np.ndarray,
-                       preference: float, metadata: Optional[Dict] = None):
+    def add_preference(
+        self,
+        level_a: np.ndarray,
+        level_b: np.ndarray,
+        preference: float,
+        metadata: Optional[Dict] = None,
+    ):
         """
         Record a single pairwise preference.
 
@@ -178,26 +192,29 @@ class PreferenceCollector:
             preference: 0.0 = A wins, 1.0 = B wins, 0.5 = tie
             metadata: Optional info (annotator id, game, …)
         """
-        self.preferences.append({
-            'level_a': level_a.tolist(),
-            'level_b': level_b.tolist(),
-            'preference': preference,
-            'metrics_a': calculate_content_metrics(level_a),
-            'metrics_b': calculate_content_metrics(level_b),
-            'metadata': metadata or {},
-            'timestamp': datetime.now().isoformat(),
-        })
+        self.preferences.append(
+            {
+                "level_a": level_a.tolist(),
+                "level_b": level_b.tolist(),
+                "preference": preference,
+                "metrics_a": calculate_content_metrics(level_a),
+                "metrics_b": calculate_content_metrics(level_b),
+                "metadata": metadata or {},
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
     # ----- interactive collection -----
-    def collect_interactive(self, levels: List[np.ndarray],
-                            game: str = 'zelda',
-                            n_comparisons: int = 20):
+    def collect_interactive(
+        self, levels: List[np.ndarray], game: str = "zelda", n_comparisons: int = 20
+    ):
         """
         CLI-based interactive preference collection.
         Displays pairs of levels and asks the annotator to choose.
         """
         try:
             import matplotlib.pyplot as plt
+
             _has_plt = True
         except ImportError:
             _has_plt = False
@@ -218,63 +235,73 @@ class PreferenceCollector:
             # Visualise if matplotlib available
             if _has_plt:
                 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-                ax1.imshow(level_a, cmap='tab20')
-                ax1.set_title(f'Level A (idx {idx_a})')
-                ax1.axis('off')
-                ax2.imshow(level_b, cmap='tab20')
-                ax2.set_title(f'Level B (idx {idx_b})')
-                ax2.axis('off')
+                ax1.imshow(level_a, cmap="tab20")
+                ax1.set_title(f"Level A (idx {idx_a})")
+                ax1.axis("off")
+                ax2.imshow(level_b, cmap="tab20")
+                ax2.set_title(f"Level B (idx {idx_b})")
+                ax2.axis("off")
                 fig.suptitle(
-                    f'Comparison {i + 1}/{n_comparisons}  |  '
-                    f'A: div={metrics_a["diversity"]:.2f} cmplx={metrics_a["complexity"]:.2f}  |  '
-                    f'B: div={metrics_b["diversity"]:.2f} cmplx={metrics_b["complexity"]:.2f}'
+                    f"Comparison {i + 1}/{n_comparisons}  |  "
+                    f"A: div={metrics_a['diversity']:.2f} cmplx={metrics_a['complexity']:.2f}  |  "
+                    f"B: div={metrics_b['diversity']:.2f} cmplx={metrics_b['complexity']:.2f}"
                 )
                 plt.tight_layout()
                 plt.show(block=False)
                 plt.pause(0.1)
             else:
                 print(f"\n--- Comparison {i + 1}/{n_comparisons} ---")
-                print(f"  A (idx {idx_a}): "
-                      f"div={metrics_a['diversity']:.2f}  "
-                      f"cmplx={metrics_a['complexity']:.2f}")
-                print(f"  B (idx {idx_b}): "
-                      f"div={metrics_b['diversity']:.2f}  "
-                      f"cmplx={metrics_b['complexity']:.2f}")
+                print(
+                    f"  A (idx {idx_a}): "
+                    f"div={metrics_a['diversity']:.2f}  "
+                    f"cmplx={metrics_a['complexity']:.2f}"
+                )
+                print(
+                    f"  B (idx {idx_b}): "
+                    f"div={metrics_b['diversity']:.2f}  "
+                    f"cmplx={metrics_b['complexity']:.2f}"
+                )
 
             while True:
-                choice = input(f"  [{i+1}/{n_comparisons}] "
-                               f"[1] A  [2] B  [3] Tie  [q] Quit: ").strip()
-                if choice == '1':
-                    self.add_preference(level_a, level_b, 0.0,
-                                        {'game': game, 'type': 'interactive'})
+                choice = input(
+                    f"  [{i + 1}/{n_comparisons}] [1] A  [2] B  [3] Tie  [q] Quit: "
+                ).strip()
+                if choice == "1":
+                    self.add_preference(
+                        level_a, level_b, 0.0, {"game": game, "type": "interactive"}
+                    )
                     break
-                elif choice == '2':
-                    self.add_preference(level_a, level_b, 1.0,
-                                        {'game': game, 'type': 'interactive'})
+                elif choice == "2":
+                    self.add_preference(
+                        level_a, level_b, 1.0, {"game": game, "type": "interactive"}
+                    )
                     break
-                elif choice == '3':
-                    self.add_preference(level_a, level_b, 0.5,
-                                        {'game': game, 'type': 'interactive'})
+                elif choice == "3":
+                    self.add_preference(
+                        level_a, level_b, 0.5, {"game": game, "type": "interactive"}
+                    )
                     break
-                elif choice.lower() == 'q':
+                elif choice.lower() == "q":
                     if _has_plt:
-                        plt.close('all')
+                        plt.close("all")
                     self.save()
                     return
                 else:
                     print("  Invalid. Enter 1, 2, 3, or q.")
 
             if _has_plt:
-                plt.close('all')
+                plt.close("all")
 
         self.save()
-        print(f"\n[OK] Collected {n_comparisons} preferences "
-              f"(total: {len(self.preferences)})")
+        print(
+            f"\n[OK] Collected {n_comparisons} preferences "
+            f"(total: {len(self.preferences)})"
+        )
 
     # ----- synthetic (for testing / bootstrapping) -----
-    def generate_synthetic_preferences(self, levels: List[np.ndarray],
-                                        n_comparisons: int = 100,
-                                        game: str = 'zelda'):
+    def generate_synthetic_preferences(
+        self, levels: List[np.ndarray], n_comparisons: int = 100, game: str = "zelda"
+    ):
         """
         Generate synthetic preferences based on content metrics.
         Simulates a human who prefers higher diversity and moderate complexity.
@@ -289,8 +316,8 @@ class PreferenceCollector:
             m_a = calculate_content_metrics(level_a)
             m_b = calculate_content_metrics(level_b)
 
-            score_a = m_a['diversity'] * 0.6 + m_a['complexity'] * 0.4
-            score_b = m_b['diversity'] * 0.6 + m_b['complexity'] * 0.4
+            score_a = m_a["diversity"] * 0.6 + m_a["complexity"] * 0.4
+            score_b = m_b["diversity"] * 0.6 + m_b["complexity"] * 0.4
 
             # Noise to simulate human inconsistency
             score_a += np.random.normal(0, 0.05)
@@ -303,8 +330,9 @@ class PreferenceCollector:
             else:
                 pref = 0.5
 
-            self.add_preference(level_a, level_b, pref,
-                                {'game': game, 'type': 'synthetic'})
+            self.add_preference(
+                level_a, level_b, pref, {"game": game, "type": "synthetic"}
+            )
 
         self.save()
         print(f"[OK] Generated {n_comparisons} synthetic preferences")
@@ -314,6 +342,7 @@ class PreferenceCollector:
 # Phase 3 — Reward Model (Bradley-Terry)
 # ===========================================================================
 
+
 class RewardModel(nn.Module):
     """
     Learned scalar reward model trained on pairwise human preferences.
@@ -321,8 +350,7 @@ class RewardModel(nn.Module):
     Bradley-Terry model:  P(A ≻ B) = σ(r(A) − r(B))
     """
 
-    def __init__(self, input_dim: int,
-                 hidden_sizes: List[int] = None):
+    def __init__(self, input_dim: int, hidden_sizes: List[int] = None):
         super().__init__()
         hidden_sizes = hidden_sizes or [128, 64, 32]
 
@@ -339,8 +367,9 @@ class RewardModel(nn.Module):
         """Predict scalar reward for a level."""
         return self.network(level)
 
-    def predict_preference(self, level_a: torch.Tensor,
-                           level_b: torch.Tensor) -> torch.Tensor:
+    def predict_preference(
+        self, level_a: torch.Tensor, level_b: torch.Tensor
+    ) -> torch.Tensor:
         """P(A ≻ B) via Bradley-Terry."""
         return torch.sigmoid(self.forward(level_a) - self.forward(level_b))
 
@@ -348,18 +377,22 @@ class RewardModel(nn.Module):
 class RewardModelTrainer:
     """Train the reward model on collected preferences."""
 
-    def __init__(self, input_dim: int, device: str = 'cpu',
-                 learning_rate: float = 1e-3):
+    def __init__(
+        self, input_dim: int, device: str = "cpu", learning_rate: float = 1e-3
+    ):
         self.device = device
         self.input_dim = input_dim
         self.reward_model = RewardModel(input_dim).to(device)
-        self.optimizer = optim.Adam(self.reward_model.parameters(),
-                                    lr=learning_rate)
+        self.optimizer = optim.Adam(self.reward_model.parameters(), lr=learning_rate)
 
     # ------------------------------------------------------------------
-    def train(self, preferences: List[Dict], epochs: int = 100,
-              batch_size: int = 32,
-              validation_split: float = 0.1) -> Dict[str, List[float]]:
+    def train(
+        self,
+        preferences: List[Dict],
+        epochs: int = 100,
+        batch_size: int = 32,
+        validation_split: float = 0.1,
+    ) -> Dict[str, List[float]]:
         """
         Train reward model on preference data.
 
@@ -376,11 +409,11 @@ class RewardModelTrainer:
 
         levels_a, levels_b, labels = [], [], []
         for pref in preferences:
-            a = self._pad_or_truncate(np.array(pref['level_a']).flatten())
-            b = self._pad_or_truncate(np.array(pref['level_b']).flatten())
+            a = self._pad_or_truncate(np.array(pref["level_a"]).flatten())
+            b = self._pad_or_truncate(np.array(pref["level_b"]).flatten())
             levels_a.append(a)
             levels_b.append(b)
-            labels.append(pref['preference'])
+            labels.append(pref["preference"])
 
         levels_a = torch.FloatTensor(np.array(levels_a)).to(self.device)
         levels_b = torch.FloatTensor(np.array(levels_b)).to(self.device)
@@ -393,7 +426,9 @@ class RewardModelTrainer:
         train_idx, val_idx = perm[n_val:], perm[:n_val]
 
         history: Dict[str, List[float]] = {
-            'train_loss': [], 'val_loss': [], 'val_accuracy': []
+            "train_loss": [],
+            "val_loss": [],
+            "val_accuracy": [],
         }
 
         for epoch in range(epochs):
@@ -403,9 +438,10 @@ class RewardModelTrainer:
             epoch_loss, n_batches = 0.0, 0
 
             for i in range(0, len(shuffled), batch_size):
-                bi = shuffled[i:i + batch_size]
+                bi = shuffled[i : i + batch_size]
                 pred = self.reward_model.predict_preference(
-                    levels_a[bi], levels_b[bi]).squeeze(-1)
+                    levels_a[bi], levels_b[bi]
+                ).squeeze(-1)
                 loss = nn.functional.binary_cross_entropy(pred, labels[bi])
 
                 self.optimizer.zero_grad()
@@ -419,51 +455,58 @@ class RewardModelTrainer:
             self.reward_model.eval()
             with torch.no_grad():
                 v_pred = self.reward_model.predict_preference(
-                    levels_a[val_idx], levels_b[val_idx]).squeeze(-1)
+                    levels_a[val_idx], levels_b[val_idx]
+                ).squeeze(-1)
                 v_loss = nn.functional.binary_cross_entropy(
-                    v_pred, labels[val_idx]).item()
+                    v_pred, labels[val_idx]
+                ).item()
 
                 choices = (v_pred > 0.5).float()
                 gt = (labels[val_idx] > 0.5).float()
-                ties = (labels[val_idx] == 0.5)
+                ties = labels[val_idx] == 0.5
                 v_acc = ((choices == gt) | ties).float().mean().item()
 
-            history['train_loss'].append(epoch_loss / max(n_batches, 1))
-            history['val_loss'].append(v_loss)
-            history['val_accuracy'].append(v_acc)
+            history["train_loss"].append(epoch_loss / max(n_batches, 1))
+            history["val_loss"].append(v_loss)
+            history["val_accuracy"].append(v_acc)
 
             if (epoch + 1) % 20 == 0:
-                print(f"  Epoch {epoch+1}/{epochs} | "
-                      f"Train: {epoch_loss / max(n_batches, 1):.4f} | "
-                      f"Val: {v_loss:.4f} | "
-                      f"Acc: {v_acc:.1%}")
+                print(
+                    f"  Epoch {epoch + 1}/{epochs} | "
+                    f"Train: {epoch_loss / max(n_batches, 1):.4f} | "
+                    f"Val: {v_loss:.4f} | "
+                    f"Acc: {v_acc:.1%}"
+                )
 
-        print(f"[OK] Reward model trained. "
-              f"Final val accuracy: {v_acc:.1%}")
+        print(f"[OK] Reward model trained. Final val accuracy: {v_acc:.1%}")
         return history
 
     # ------------------------------------------------------------------
     def _pad_or_truncate(self, arr: np.ndarray) -> np.ndarray:
         if len(arr) >= self.input_dim:
-            return arr[:self.input_dim].astype(np.float32)
+            return arr[: self.input_dim].astype(np.float32)
         return np.pad(arr, (0, self.input_dim - len(arr))).astype(np.float32)
 
     def save(self, path: str):
-        torch.save({
-            'model_state_dict': self.reward_model.state_dict(),
-            'input_dim': self.input_dim,
-        }, path)
+        torch.save(
+            {
+                "model_state_dict": self.reward_model.state_dict(),
+                "input_dim": self.input_dim,
+            },
+            path,
+        )
         print(f"[OK] Reward model saved to {path}")
 
     def load(self, path: str):
         ckpt = torch.load(path, map_location=self.device)
-        self.reward_model.load_state_dict(ckpt['model_state_dict'])
+        self.reward_model.load_state_dict(ckpt["model_state_dict"])
         print(f"[OK] Reward model loaded from {path}")
 
 
 # ===========================================================================
 # Phase 4 — RLHF Environment Wrapper & PPO Fine-tuning
 # ===========================================================================
+
 
 class RLHFRewardWrapper(gym.Wrapper):
     """
@@ -475,10 +518,14 @@ class RLHFRewardWrapper(gym.Wrapper):
     where w = rlhf_weight.
     """
 
-    def __init__(self, env, reward_model: RewardModel,
-                 rlhf_weight: float = 0.5,
-                 device: str = 'cpu',
-                 input_dim: int = 121):
+    def __init__(
+        self,
+        env,
+        reward_model: RewardModel,
+        rlhf_weight: float = 0.5,
+        device: str = "cpu",
+        input_dim: int = 121,
+    ):
         super().__init__(env)
         self.reward_model = reward_model
         self.rlhf_weight = rlhf_weight
@@ -495,26 +542,25 @@ class RLHFRewardWrapper(gym.Wrapper):
             t = torch.FloatTensor(level_flat).unsqueeze(0).to(self.device)
             human_reward = self.reward_model(t).item()
 
-        blended = ((1 - self.rlhf_weight) * env_reward
-                    + self.rlhf_weight * human_reward)
+        blended = (1 - self.rlhf_weight) * env_reward + self.rlhf_weight * human_reward
 
-        info['env_reward'] = env_reward
-        info['human_reward'] = human_reward
-        info['blended_reward'] = blended
+        info["env_reward"] = env_reward
+        info["human_reward"] = human_reward
+        info["blended_reward"] = blended
 
         return obs, blended, done, info
 
     def _to_flat(self, obs, info: Dict) -> np.ndarray:
         """Extract and pad/truncate a flat level vector."""
-        if isinstance(info, dict) and 'map' in info:
-            arr = np.array(info['map']).flatten()
+        if isinstance(info, dict) and "map" in info:
+            arr = np.array(info["map"]).flatten()
         elif isinstance(obs, np.ndarray):
             arr = obs.flatten()
         else:
             arr = np.zeros(self.input_dim)
 
         if len(arr) >= self.input_dim:
-            return arr[:self.input_dim].astype(np.float32)
+            return arr[: self.input_dim].astype(np.float32)
         return np.pad(arr, (0, self.input_dim - len(arr))).astype(np.float32)
 
 
@@ -524,9 +570,12 @@ class RLHFCallback(BaseCallback):
     during PPO fine-tuning.
     """
 
-    def __init__(self, resource_monitor: ResourceMonitor,
-                 training_logger: TrainingLogger,
-                 verbose: int = 1):
+    def __init__(
+        self,
+        resource_monitor: ResourceMonitor,
+        training_logger: TrainingLogger,
+        verbose: int = 1,
+    ):
         super().__init__(verbose)
         self.resource_monitor = resource_monitor
         self.training_logger = training_logger
@@ -535,29 +584,32 @@ class RLHFCallback(BaseCallback):
         self.ep_human_rewards: List[float] = []
 
     def _on_step(self) -> bool:
-        infos = self.locals.get('infos', [{}])
+        infos = self.locals.get("infos", [{}])
         info = infos[0] if infos else {}
 
-        self.ep_env_rewards.append(info.get('env_reward', 0.0))
-        self.ep_human_rewards.append(info.get('human_reward', 0.0))
+        self.ep_env_rewards.append(info.get("env_reward", 0.0))
+        self.ep_human_rewards.append(info.get("human_reward", 0.0))
 
-        done = self.locals.get('dones', [False])[0]
+        done = self.locals.get("dones", [False])[0]
         if done:
             self.episode_count += 1
             if self.verbose and self.episode_count % 20 == 0:
                 resources = self.resource_monitor.get_resources()
                 mean_env = np.mean(self.ep_env_rewards[-200:])
                 mean_hum = np.mean(self.ep_human_rewards[-200:])
-                print(f"  RLHF Ep {self.episode_count} | "
-                      f"Env: {mean_env:.3f}  Human: {mean_hum:.3f} | "
-                      f"CPU: {resources['cpu_percent']:.0f}%  "
-                      f"RAM: {resources['ram_percent']:.0f}%")
+                print(
+                    f"  RLHF Ep {self.episode_count} | "
+                    f"Env: {mean_env:.3f}  Human: {mean_hum:.3f} | "
+                    f"CPU: {resources['cpu_percent']:.0f}%  "
+                    f"RAM: {resources['ram_percent']:.0f}%"
+                )
         return True
 
 
 # ===========================================================================
 # RLHF Trainer (full pipeline)
 # ===========================================================================
+
 
 class RLHFTrainer:
     """
@@ -570,18 +622,20 @@ class RLHFTrainer:
         4. fine_tune_with_rlhf()  — PPO against blended reward
     """
 
-    def __init__(self,
-                 game: str = 'zelda',
-                 representation: str = 'narrow',
-                 base_model_path: Optional[str] = None,
-                 rlhf_weight: float = 0.5,
-                 reward_model_lr: float = 1e-3,
-                 reward_model_epochs: int = 100,
-                 ppo_timesteps: int = 50_000,
-                 device: str = 'auto',
-                 experiment_name: Optional[str] = None,
-                 log_dir: str = 'logs',
-                 checkpoint_dir: str = 'checkpoints'):
+    def __init__(
+        self,
+        game: str = "zelda",
+        representation: str = "narrow",
+        base_model_path: Optional[str] = None,
+        rlhf_weight: float = 0.5,
+        reward_model_lr: float = 1e-3,
+        reward_model_epochs: int = 100,
+        ppo_timesteps: int = 50_000,
+        device: str = "auto",
+        experiment_name: Optional[str] = None,
+        log_dir: str = "logs",
+        checkpoint_dir: str = "checkpoints",
+    ):
         """
         Args:
             game: Game environment name
@@ -603,26 +657,26 @@ class RLHFTrainer:
         self.reward_model_epochs = reward_model_epochs
         self.ppo_timesteps = ppo_timesteps
 
-        if device == 'auto':
-            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        if device == "auto":
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
         else:
             self.device = device
 
         if experiment_name is None:
-            ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
             experiment_name = f"RLHF_{game}_{ts}"
         self.experiment_name = experiment_name
 
-        self.resource_monitor = ResourceMonitor(
-            use_gpu=(self.device == 'cuda'))
-        self.logger = TrainingLogger(log_dir=log_dir,
-                                     experiment_name=experiment_name)
-        self.checkpoint_dir = create_checkpoint_dir(checkpoint_dir,
-                                                    experiment_name)
+        self.resource_monitor = ResourceMonitor(use_gpu=(self.device == "cuda"))
+        self.logger = TrainingLogger(log_dir=log_dir, experiment_name=experiment_name)
+        self.checkpoint_dir = create_checkpoint_dir(checkpoint_dir, experiment_name)
 
         # Determine input dimension from a temporary env
-        tmp_env = make_pcgrl_env(game=game, representation=representation,
-                                 resource_monitor=self.resource_monitor)
+        tmp_env = make_pcgrl_env(
+            game=game,
+            representation=representation,
+            resource_monitor=self.resource_monitor,
+        )
         if isinstance(tmp_env.observation_space, gym.spaces.Dict):
             tmp_env = DictFlattenWrapper(tmp_env)
         self.input_dim = int(np.prod(tmp_env.observation_space.shape))
@@ -630,9 +684,11 @@ class RLHFTrainer:
 
         # Sub-components
         self.preference_collector = PreferenceCollector(
-            save_path=os.path.join('data', 'preferences', game))
+            save_path=os.path.join("data", "preferences", game)
+        )
         self.reward_trainer = RewardModelTrainer(
-            self.input_dim, self.device, reward_model_lr)
+            self.input_dim, self.device, reward_model_lr
+        )
 
         print(f"\n{'=' * 60}")
         print(f"RLHF Trainer Initialized")
@@ -650,8 +706,7 @@ class RLHFTrainer:
     # ------------------------------------------------------------------
     # Step 1
     # ------------------------------------------------------------------
-    def generate_levels_for_feedback(self,
-                                     n_levels: int = 50) -> List[np.ndarray]:
+    def generate_levels_for_feedback(self, n_levels: int = 50) -> List[np.ndarray]:
         """Generate levels with the current (or random) policy."""
         return generate_levels(
             game=self.game,
@@ -664,16 +719,21 @@ class RLHFTrainer:
     # ------------------------------------------------------------------
     # Step 2
     # ------------------------------------------------------------------
-    def collect_preferences(self, levels: List[np.ndarray],
-                            n_comparisons: int = 50,
-                            use_synthetic: bool = False):
+    def collect_preferences(
+        self,
+        levels: List[np.ndarray],
+        n_comparisons: int = 50,
+        use_synthetic: bool = False,
+    ):
         """Collect human or synthetic preferences."""
         if use_synthetic:
             self.preference_collector.generate_synthetic_preferences(
-                levels, n_comparisons, self.game)
+                levels, n_comparisons, self.game
+            )
         else:
             self.preference_collector.collect_interactive(
-                levels, self.game, n_comparisons)
+                levels, self.game, n_comparisons
+            )
 
     # ------------------------------------------------------------------
     # Step 3
@@ -682,15 +742,15 @@ class RLHFTrainer:
         """Train the Bradley-Terry reward model on collected preferences."""
         if not self.preference_collector.preferences:
             raise ValueError(
-                "No preferences collected. "
-                "Run collect_preferences() first.")
+                "No preferences collected. Run collect_preferences() first."
+            )
 
         self.reward_trainer.train(
             self.preference_collector.preferences,
             epochs=self.reward_model_epochs,
         )
 
-        rm_path = os.path.join(self.checkpoint_dir, 'reward_model.pt')
+        rm_path = os.path.join(self.checkpoint_dir, "reward_model.pt")
         self.reward_trainer.save(rm_path)
 
         return self.reward_trainer.reward_model
@@ -698,8 +758,7 @@ class RLHFTrainer:
     # ------------------------------------------------------------------
     # Step 4
     # ------------------------------------------------------------------
-    def fine_tune_with_rlhf(self,
-                            reward_model: Optional[RewardModel] = None):
+    def fine_tune_with_rlhf(self, reward_model: Optional[RewardModel] = None):
         """
         Fine-tune the PCG policy with PPO using a blended reward
         (environment + learned human preference).
@@ -724,7 +783,8 @@ class RLHFTrainer:
             if isinstance(base.observation_space, gym.spaces.Dict):
                 base = DictFlattenWrapper(base)
             return RLHFRewardWrapper(
-                base, reward_model,
+                base,
+                reward_model,
                 rlhf_weight=self.rlhf_weight,
                 device=self.device,
                 input_dim=self.input_dim,
@@ -734,12 +794,12 @@ class RLHFTrainer:
 
         # Load or create PPO model
         if self.base_model_path:
-            model = PPO.load(self.base_model_path, env=env,
-                             device=self.device)
+            model = PPO.load(self.base_model_path, env=env, device=self.device)
             print(f"[OK] Loaded base model from {self.base_model_path}")
         else:
             model = PPO(
-                'MlpPolicy', env,
+                "MlpPolicy",
+                env,
                 learning_rate=2.5e-4,
                 n_steps=128,
                 batch_size=64,
@@ -758,7 +818,7 @@ class RLHFTrainer:
         model.learn(total_timesteps=self.ppo_timesteps, callback=callback)
 
         # Save
-        rlhf_path = os.path.join(self.checkpoint_dir, 'rlhf_model.zip')
+        rlhf_path = os.path.join(self.checkpoint_dir, "rlhf_model.zip")
         model.save(rlhf_path)
         print(f"[OK] RLHF-tuned model saved to {rlhf_path}")
 
@@ -768,9 +828,9 @@ class RLHFTrainer:
     # ------------------------------------------------------------------
     # Full pipeline
     # ------------------------------------------------------------------
-    def run_full_pipeline(self, n_levels: int = 50,
-                          n_comparisons: int = 50,
-                          use_synthetic: bool = True):
+    def run_full_pipeline(
+        self, n_levels: int = 50, n_comparisons: int = 50, use_synthetic: bool = True
+    ):
         """
         Run the complete RLHF pipeline end-to-end.
 
@@ -801,35 +861,55 @@ class RLHFTrainer:
 # CLI Entry Point
 # ===========================================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description='RLHF Training for RAPCG-MetaRL')
-    parser.add_argument('--game', type=str, default='zelda',
-                        choices=['zelda', 'sokoban', 'binary'])
-    parser.add_argument('--representation', type=str, default='narrow')
-    parser.add_argument('--base-model', type=str, default=None,
-                        help='Path to pre-trained PPO .zip model')
-    parser.add_argument('--rlhf-weight', type=float, default=0.5,
-                        help='Weight of human-preference reward (0–1)')
-    parser.add_argument('--n-levels', type=int, default=50,
-                        help='Levels to generate for feedback')
-    parser.add_argument('--n-comparisons', type=int, default=50,
-                        help='Number of pairwise comparisons')
-    parser.add_argument('--synthetic', action='store_true',
-                        help='Use synthetic preferences (for testing)')
-    parser.add_argument('--interactive', action='store_true',
-                        help='Collect real human preferences')
-    parser.add_argument('--timesteps', type=int, default=50_000,
-                        help='PPO fine-tuning timesteps')
-    parser.add_argument('--reward-epochs', type=int, default=100,
-                        help='Reward model training epochs')
-    parser.add_argument('--reward-model-only', action='store_true',
-                        help='Only train reward model, skip PPO')
-    parser.add_argument('--device', type=str, default='auto',
-                        choices=['auto', 'cuda', 'cpu'])
-    parser.add_argument('--experiment-name', type=str, default=None)
+    parser = argparse.ArgumentParser(description="RLHF Training for RAPCG-MetaRL")
+    parser.add_argument(
+        "--game", type=str, default="zelda", choices=["zelda", "sokoban", "binary"]
+    )
+    parser.add_argument("--representation", type=str, default="narrow")
+    parser.add_argument(
+        "--base-model",
+        type=str,
+        default=None,
+        help="Path to pre-trained PPO .zip model",
+    )
+    parser.add_argument(
+        "--rlhf-weight",
+        type=float,
+        default=0.5,
+        help="Weight of human-preference reward (0–1)",
+    )
+    parser.add_argument(
+        "--n-levels", type=int, default=50, help="Levels to generate for feedback"
+    )
+    parser.add_argument(
+        "--n-comparisons", type=int, default=50, help="Number of pairwise comparisons"
+    )
+    parser.add_argument(
+        "--synthetic",
+        action="store_true",
+        help="Use synthetic preferences (for testing)",
+    )
+    parser.add_argument(
+        "--interactive", action="store_true", help="Collect real human preferences"
+    )
+    parser.add_argument(
+        "--timesteps", type=int, default=50_000, help="PPO fine-tuning timesteps"
+    )
+    parser.add_argument(
+        "--reward-epochs", type=int, default=100, help="Reward model training epochs"
+    )
+    parser.add_argument(
+        "--reward-model-only",
+        action="store_true",
+        help="Only train reward model, skip PPO",
+    )
+    parser.add_argument(
+        "--device", type=str, default="auto", choices=["auto", "cuda", "cpu"]
+    )
+    parser.add_argument("--experiment-name", type=str, default=None)
 
     args = parser.parse_args()
 
@@ -847,8 +927,8 @@ if __name__ == '__main__':
     if args.reward_model_only:
         levels = trainer.generate_levels_for_feedback(args.n_levels)
         trainer.collect_preferences(
-            levels, args.n_comparisons,
-            use_synthetic=not args.interactive)
+            levels, args.n_comparisons, use_synthetic=not args.interactive
+        )
         trainer.train_reward_model()
     else:
         trainer.run_full_pipeline(

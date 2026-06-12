@@ -226,12 +226,12 @@ Observations:
    → Original behavior, no resource awareness
 """
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print(ARCHITECTURE)
-    
-    print("\n" + "="*75)
+
+    print("\n" + "=" * 75)
     print("IMPLEMENTATION SUMMARY")
-    print("="*75)
+    print("=" * 75)
     print("\n✓ Resource-aware reward shaping implemented")
     print("✓ Feedback loop creates resource-aware agent")
     print("✓ Dynamic complexity adaptation activated")

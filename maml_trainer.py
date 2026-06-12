@@ -10,6 +10,7 @@ Algorithm (Finn et al., 2017):
        b. Compute loss L_{T_i}(theta'_i) on adapted params
     3. Outer loop: theta = theta - beta * grad_theta * Sum_i L_{T_i}(theta'_i)    (meta-update)
 """
+
 import os
 import sys
 import copy
@@ -24,7 +25,7 @@ from datetime import datetime
 # Project paths
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
-sys.path.append(os.path.join(project_root, 'gym-pcgrl'))
+sys.path.append(os.path.join(project_root, "gym-pcgrl"))
 
 from utils import ResourceMonitor, TrainingLogger, create_checkpoint_dir
 from wrappers.pcgrl_env import make_pcgrl_env
@@ -35,7 +36,9 @@ from gym import spaces
 try:
     from stable_baselines3.common.vec_env import DummyVecEnv
 except ImportError:
-    print("Error: stable-baselines3 not installed. Install with: pip install stable-baselines3")
+    print(
+        "Error: stable-baselines3 not installed. Install with: pip install stable-baselines3"
+    )
     sys.exit(1)
 
 
@@ -72,6 +75,7 @@ class DictFlattenWrapper(gym.Wrapper):
 # Task Distribution
 # ===========================================================================
 
+
 class TaskDistribution:
     """
     Generates diverse PCG tasks for meta-learning.
@@ -80,30 +84,31 @@ class TaskDistribution:
     """
 
     def __init__(self, games: List[str] = None, representations: List[str] = None):
-        self.games = games or ['zelda', 'sokoban', 'binary']
-        self.representations = representations or ['narrow', 'wide', 'turtle']
+        self.games = games or ["zelda", "sokoban", "binary"]
+        self.representations = representations or ["narrow", "wide", "turtle"]
 
         # Task-specific reward weight variations for diversity
         self._reward_variations = {
-            'zelda': [
-                {'path-length': 2.0, 'regions': 1.0, 'nearest-enemy': 1.0},
-                {'path-length': 1.0, 'regions': 2.0, 'nearest-enemy': 1.0},
-                {'path-length': 1.0, 'regions': 1.0, 'nearest-enemy': 3.0},
+            "zelda": [
+                {"path-length": 2.0, "regions": 1.0, "nearest-enemy": 1.0},
+                {"path-length": 1.0, "regions": 2.0, "nearest-enemy": 1.0},
+                {"path-length": 1.0, "regions": 1.0, "nearest-enemy": 3.0},
             ],
-            'sokoban': [
-                {'dist-win': 2.0, 'sol-length': 1.0, 'ratio': 1.0},
-                {'dist-win': 1.0, 'sol-length': 2.0, 'ratio': 1.0},
-                {'dist-win': 3.0, 'sol-length': 1.0, 'ratio': 2.0},
+            "sokoban": [
+                {"dist-win": 2.0, "sol-length": 1.0, "ratio": 1.0},
+                {"dist-win": 1.0, "sol-length": 2.0, "ratio": 1.0},
+                {"dist-win": 3.0, "sol-length": 1.0, "ratio": 2.0},
             ],
-            'binary': [
-                {'regions': 5.0, 'path-length': 1.0},
-                {'regions': 1.0, 'path-length': 5.0},
-                {'regions': 3.0, 'path-length': 3.0},
+            "binary": [
+                {"regions": 5.0, "path-length": 1.0},
+                {"regions": 1.0, "path-length": 5.0},
+                {"regions": 3.0, "path-length": 3.0},
             ],
         }
 
-    def sample_tasks(self, n_tasks: int,
-                     fixed_game: Optional[str] = None) -> List[Dict]:
+    def sample_tasks(
+        self, n_tasks: int, fixed_game: Optional[str] = None
+    ) -> List[Dict]:
         """
         Sample n_tasks from the task distribution.
 
@@ -117,12 +122,12 @@ class TaskDistribution:
         tasks = []
         for _ in range(n_tasks):
             game = fixed_game or np.random.choice(self.games)
-            
+
             # Filter representations by game (wide action space incompatible with current policy)
             valid_reps = self.representations
-            if game == 'sokoban':
-                valid_reps = [r for r in self.representations if r != 'wide']
-            
+            if game == "sokoban":
+                valid_reps = [r for r in self.representations if r != "wide"]
+
             representation = np.random.choice(valid_reps)
 
             # Sample reward weight variation
@@ -136,32 +141,35 @@ class TaskDistribution:
             # Vary change_percentage for difficulty diversity
             change_percentage = np.random.uniform(0.2, 0.8)
 
-            tasks.append({
-                'game': game,
-                'representation': representation,
-                'reward_weights': rewards,
-                'change_percentage': change_percentage,
-            })
+            tasks.append(
+                {
+                    "game": game,
+                    "representation": representation,
+                    "reward_weights": rewards,
+                    "change_percentage": change_percentage,
+                }
+            )
         return tasks
 
     def create_env(self, task: Dict, resource_monitor: ResourceMonitor) -> DummyVecEnv:
         """Create a vectorized environment for a specific task."""
+
         def _make():
             env = make_pcgrl_env(
                 resource_monitor=resource_monitor,
-                game=task['game'],
-                representation=task['representation'],
+                game=task["game"],
+                representation=task["representation"],
                 ram_penalty_weight=0.2,
                 cpu_penalty_weight=0.1,
                 gpu_penalty_weight=0.1,
             )
             # Apply task-specific reward weights
-            if task['reward_weights'] and hasattr(env, 'unwrapped'):
+            if task["reward_weights"] and hasattr(env, "unwrapped"):
                 try:
-                    if hasattr(env.unwrapped, '_prob'):
+                    if hasattr(env.unwrapped, "_prob"):
                         env.unwrapped._prob.adjust_param(
-                            change_percentage=task['change_percentage'],
-                            rewards=task['reward_weights'],
+                            change_percentage=task["change_percentage"],
+                            rewards=task["reward_weights"],
                         )
                 except Exception:
                     pass  # Some envs may not support all params
@@ -169,12 +177,14 @@ class TaskDistribution:
             if isinstance(env.observation_space, gym.spaces.Dict):
                 env = DictFlattenWrapper(env)
             return env
+
         return DummyVecEnv([_make])
 
 
 # ===========================================================================
 # MAML Policy Network
 # ===========================================================================
+
 
 class MAMLPolicy(nn.Module):
     """
@@ -183,8 +193,7 @@ class MAMLPolicy(nn.Module):
     with arbitrary parameter dicts (required for differentiable inner loop).
     """
 
-    def __init__(self, obs_dim: int, action_dim: int,
-                 hidden_sizes: List[int] = None):
+    def __init__(self, obs_dim: int, action_dim: int, hidden_sizes: List[int] = None):
         super().__init__()
         hidden_sizes = hidden_sizes or [64, 64]
 
@@ -221,8 +230,9 @@ class MAMLPolicy(nn.Module):
             probs = torch.softmax(logits, dim=-1)
             return torch.distributions.Categorical(probs).sample().item()
 
-    def functional_forward(self, obs: torch.Tensor,
-                           params: OrderedDict) -> Tuple[torch.Tensor, torch.Tensor]:
+    def functional_forward(
+        self, obs: torch.Tensor, params: OrderedDict
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Forward pass using external parameters (for MAML inner loop).
         This avoids in-place parameter modification and keeps the
@@ -232,17 +242,17 @@ class MAMLPolicy(nn.Module):
         x = obs
         idx = 0
         for name, p in params.items():
-            if not name.startswith('actor'):
+            if not name.startswith("actor"):
                 continue
-            if 'weight' in name:
+            if "weight" in name:
                 x = x.matmul(p.t())
-            elif 'bias' in name:
+            elif "bias" in name:
                 x = x + p
                 idx += 1
                 # Apply Tanh to all hidden layers (every Linear has weight+bias)
                 # The last bias does NOT get an activation
                 n_actor_biases = sum(
-                    1 for k in params if k.startswith('actor') and 'bias' in k
+                    1 for k in params if k.startswith("actor") and "bias" in k
                 )
                 if idx < n_actor_biases:
                     x = torch.tanh(x)
@@ -252,15 +262,15 @@ class MAMLPolicy(nn.Module):
         x = obs
         idx = 0
         for name, p in params.items():
-            if not name.startswith('critic'):
+            if not name.startswith("critic"):
                 continue
-            if 'weight' in name:
+            if "weight" in name:
                 x = x.matmul(p.t())
-            elif 'bias' in name:
+            elif "bias" in name:
                 x = x + p
                 idx += 1
                 n_critic_biases = sum(
-                    1 for k in params if k.startswith('critic') and 'bias' in k
+                    1 for k in params if k.startswith("critic") and "bias" in k
                 )
                 if idx < n_critic_biases:
                     x = torch.tanh(x)
@@ -273,9 +283,14 @@ class MAMLPolicy(nn.Module):
 # Trajectory Collection & Policy Loss
 # ===========================================================================
 
-def collect_trajectories(env, policy: MAMLPolicy, n_steps: int = 128,
-                         device: str = 'cpu',
-                         params: Optional[OrderedDict] = None) -> Dict:
+
+def collect_trajectories(
+    env,
+    policy: MAMLPolicy,
+    n_steps: int = 128,
+    device: str = "cpu",
+    params: Optional[OrderedDict] = None,
+) -> Dict:
     """
     Collect trajectory rollouts from environment.
 
@@ -305,19 +320,29 @@ def collect_trajectories(env, policy: MAMLPolicy, n_steps: int = 128,
         if step_idx == 0 and n_steps > 0 and params is not None:
             # Get expected input dimension from policy weights
             for name, p in params.items():
-                if 'actor' in name and 'weight' in name:
+                if "actor" in name and "weight" in name:
                     expected_dim = p.shape[-1]
                     if obs_flat.shape[-1] != expected_dim:
                         print(f"[WARNING] Observation dimension mismatch!")
                         print(f"  Observation shape: {obs_flat.shape}")
                         print(f"  Expected input dim: {expected_dim}")
-                        print(f"  Observation (batched): {obs_flat.shape[0]}, features: {obs_flat.shape[-1]}")
+                        print(
+                            f"  Observation (batched): {obs_flat.shape[0]}, features: {obs_flat.shape[-1]}"
+                        )
                         print(f"  First weight matrix shape: {p.shape}")
-                        
+
                         # PAD observation if too small
                         if obs_flat.shape[-1] < expected_dim:
                             padding = expected_dim - obs_flat.shape[-1]
-                            obs_flat = torch.cat([obs_flat, torch.zeros(obs_flat.shape[0], padding, device=device)], dim=-1)
+                            obs_flat = torch.cat(
+                                [
+                                    obs_flat,
+                                    torch.zeros(
+                                        obs_flat.shape[0], padding, device=device
+                                    ),
+                                ],
+                                dim=-1,
+                            )
                             print(f"  -> Padded observation to {obs_flat.shape}")
                     break
 
@@ -344,19 +369,22 @@ def collect_trajectories(env, policy: MAMLPolicy, n_steps: int = 128,
         obs = next_obs
 
     return {
-        'observations': torch.stack(observations),
-        'actions': torch.stack(actions),
-        'rewards': torch.stack(rewards),
-        'values': torch.stack(values),
-        'log_probs': torch.stack(log_probs),
-        'dones': torch.stack(dones),
+        "observations": torch.stack(observations),
+        "actions": torch.stack(actions),
+        "rewards": torch.stack(rewards),
+        "values": torch.stack(values),
+        "log_probs": torch.stack(log_probs),
+        "dones": torch.stack(dones),
     }
 
 
-def compute_policy_loss(trajectory: Dict, policy: MAMLPolicy,
-                        params: Optional[OrderedDict] = None,
-                        gamma: float = 0.99,
-                        gae_lambda: float = 0.95) -> torch.Tensor:
+def compute_policy_loss(
+    trajectory: Dict,
+    policy: MAMLPolicy,
+    params: Optional[OrderedDict] = None,
+    gamma: float = 0.99,
+    gae_lambda: float = 0.95,
+) -> torch.Tensor:
     """
     Compute policy gradient loss with Generalized Advantage Estimation (GAE).
 
@@ -370,11 +398,11 @@ def compute_policy_loss(trajectory: Dict, policy: MAMLPolicy,
     Returns:
         Scalar loss tensor (differentiable)
     """
-    rewards = trajectory['rewards']
-    values = trajectory['values']
-    dones = trajectory['dones']
-    observations = trajectory['observations']
-    actions = trajectory['actions']
+    rewards = trajectory["rewards"]
+    values = trajectory["values"]
+    dones = trajectory["dones"]
+    observations = trajectory["observations"]
+    actions = trajectory["actions"]
 
     T = len(rewards)
 
@@ -384,7 +412,9 @@ def compute_policy_loss(trajectory: Dict, policy: MAMLPolicy,
     for t in reversed(range(T)):
         next_val = values[t + 1].detach() if t < T - 1 else 0.0
         delta = rewards[t] + gamma * next_val * (1 - dones[t]) - values[t].detach()
-        advantages[t] = last_gae = delta + gamma * gae_lambda * (1 - dones[t]) * last_gae
+        advantages[t] = last_gae = (
+            delta + gamma * gae_lambda * (1 - dones[t]) * last_gae
+        )
 
     # --- Recompute log-probs with gradient tracking ---
     obs_all = observations.squeeze(1)
@@ -416,6 +446,7 @@ def compute_policy_loss(trajectory: Dict, policy: MAMLPolicy,
 # MAML Trainer
 # ===========================================================================
 
+
 class MAMLTrainer:
     """
     MAML trainer for resource-aware procedural content generation.
@@ -429,20 +460,22 @@ class MAMLTrainer:
         - TrainingLogger   → tracks meta-training metrics
     """
 
-    def __init__(self,
-                 games: List[str] = None,
-                 representations: List[str] = None,
-                 meta_lr: float = 1e-3,
-                 inner_lr: float = 0.01,
-                 inner_steps: int = 5,
-                 meta_batch_size: int = 4,
-                 n_trajectories: int = 128,
-                 total_meta_iterations: int = 500,
-                 first_order: bool = True,
-                 device: str = 'auto',
-                 experiment_name: str = None,
-                 log_dir: str = 'logs',
-                 checkpoint_dir: str = 'checkpoints'):
+    def __init__(
+        self,
+        games: List[str] = None,
+        representations: List[str] = None,
+        meta_lr: float = 1e-3,
+        inner_lr: float = 0.01,
+        inner_steps: int = 5,
+        meta_batch_size: int = 4,
+        n_trajectories: int = 128,
+        total_meta_iterations: int = 500,
+        first_order: bool = True,
+        device: str = "auto",
+        experiment_name: str = None,
+        log_dir: str = "logs",
+        checkpoint_dir: str = "checkpoints",
+    ):
         """
         Args:
             games: List of games to draw tasks from
@@ -468,8 +501,8 @@ class MAMLTrainer:
         self.first_order = first_order
 
         # Device
-        if device == 'auto':
-            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        if device == "auto":
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
         else:
             self.device = device
 
@@ -477,17 +510,15 @@ class MAMLTrainer:
         self.task_distribution = TaskDistribution(games, representations)
 
         # Resource monitoring
-        self.resource_monitor = ResourceMonitor(use_gpu=(self.device == 'cuda'))
+        self.resource_monitor = ResourceMonitor(use_gpu=(self.device == "cuda"))
 
         # Experiment tracking
         if experiment_name is None:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             experiment_name = f"MAML_{timestamp}"
         self.experiment_name = experiment_name
-        self.logger = TrainingLogger(log_dir=log_dir,
-                                     experiment_name=experiment_name)
-        self.checkpoint_dir = create_checkpoint_dir(checkpoint_dir,
-                                                    experiment_name)
+        self.logger = TrainingLogger(log_dir=log_dir, experiment_name=experiment_name)
+        self.checkpoint_dir = create_checkpoint_dir(checkpoint_dir, experiment_name)
 
         # Will be initialized when we discover obs/action dims from env
         self.policy: Optional[MAMLPolicy] = None
@@ -510,10 +541,8 @@ class MAMLTrainer:
     def _init_policy(self, obs_dim: int, action_dim: int):
         """Initialize policy once env dimensions are known."""
         self.policy = MAMLPolicy(obs_dim, action_dim).to(self.device)
-        self.meta_optimizer = optim.Adam(self.policy.parameters(),
-                                         lr=self.meta_lr)
-        print(f"[OK] Policy initialized: obs_dim={obs_dim}, "
-              f"action_dim={action_dim}")
+        self.meta_optimizer = optim.Adam(self.policy.parameters(), lr=self.meta_lr)
+        print(f"[OK] Policy initialized: obs_dim={obs_dim}, action_dim={action_dim}")
 
     # ------------------------------------------------------------------
     def inner_loop(self, task: Dict) -> Tuple[OrderedDict, float]:
@@ -535,34 +564,39 @@ class MAMLTrainer:
             obs_space = env.observation_space
             act_space = env.action_space
             obs_dim = int(np.prod(obs_space.shape))
-            action_dim = (act_space.n
-                          if hasattr(act_space, 'n')
-                          else int(np.prod(act_space.shape)))
+            action_dim = (
+                act_space.n
+                if hasattr(act_space, "n")
+                else int(np.prod(act_space.shape))
+            )
             self._init_policy(obs_dim, action_dim)
 
         # Clone current parameters
         adapted_params = OrderedDict(
-            (name, param.clone())
-            for name, param in self.policy.named_parameters()
+            (name, param.clone()) for name, param in self.policy.named_parameters()
         )
 
         # K gradient steps on this task
         final_loss_val = 0.0
         for step_k in range(self.inner_steps):
-            traj = collect_trajectories(env, self.policy,
-                                        self.n_trajectories,
-                                        self.device, adapted_params)
+            traj = collect_trajectories(
+                env, self.policy, self.n_trajectories, self.device, adapted_params
+            )
             loss = compute_policy_loss(traj, self.policy, adapted_params)
 
             grads = torch.autograd.grad(
-                loss, adapted_params.values(),
+                loss,
+                adapted_params.values(),
                 create_graph=not self.first_order,
                 allow_unused=True,
             )
 
             adapted_params = OrderedDict(
-                (name, param - self.inner_lr * (g if g is not None
-                                                 else torch.zeros_like(param)))
+                (
+                    name,
+                    param
+                    - self.inner_lr * (g if g is not None else torch.zeros_like(param)),
+                )
                 for (name, param), g in zip(adapted_params.items(), grads)
             )
             final_loss_val = loss.item()
@@ -589,11 +623,10 @@ class MAMLTrainer:
 
             # Evaluate adapted params on fresh trajectories from same task
             env = self.task_distribution.create_env(task, self.resource_monitor)
-            eval_traj = collect_trajectories(env, self.policy,
-                                             self.n_trajectories,
-                                             self.device, adapted_params)
-            task_loss = compute_policy_loss(eval_traj, self.policy,
-                                           adapted_params)
+            eval_traj = collect_trajectories(
+                env, self.policy, self.n_trajectories, self.device, adapted_params
+            )
+            task_loss = compute_policy_loss(eval_traj, self.policy, adapted_params)
             meta_loss = meta_loss + task_loss / len(tasks)
             env.close()
 
@@ -608,10 +641,12 @@ class MAMLTrainer:
     # ------------------------------------------------------------------
     def train(self):
         """Run full MAML meta-training loop."""
-        print(f"\nStarting MAML meta-training "
-              f"({self.total_meta_iterations} iterations)...\n")
+        print(
+            f"\nStarting MAML meta-training "
+            f"({self.total_meta_iterations} iterations)...\n"
+        )
 
-        best_meta_loss = float('inf')
+        best_meta_loss = float("inf")
         meta_loss_history: List[float] = []
 
         for iteration in range(1, self.total_meta_iterations + 1):
@@ -625,34 +660,35 @@ class MAMLTrainer:
             # Resource snapshot
             resources = self.resource_monitor.get_resources()
 
-            task_names = [t['game'] for t in tasks]
-            print(f"Iter {iteration}/{self.total_meta_iterations} | "
-                  f"Meta-Loss: {meta_loss:.4f} | "
-                  f"Tasks: {task_names} | "
-                  f"CPU: {resources['cpu_percent']:.0f}% | "
-                  f"RAM: {resources['ram_percent']:.0f}%")
+            task_names = [t["game"] for t in tasks]
+            print(
+                f"Iter {iteration}/{self.total_meta_iterations} | "
+                f"Meta-Loss: {meta_loss:.4f} | "
+                f"Tasks: {task_names} | "
+                f"CPU: {resources['cpu_percent']:.0f}% | "
+                f"RAM: {resources['ram_percent']:.0f}%"
+            )
 
             # Save best
             if meta_loss < best_meta_loss:
                 best_meta_loss = meta_loss
-                self._save_checkpoint('best_meta_model.pt', iteration,
-                                      meta_loss)
+                self._save_checkpoint("best_meta_model.pt", iteration, meta_loss)
 
             # Periodic checkpoint
             if iteration % 50 == 0:
-                self._save_checkpoint(f'meta_model_iter_{iteration}.pt',
-                                      iteration, meta_loss)
+                self._save_checkpoint(
+                    f"meta_model_iter_{iteration}.pt", iteration, meta_loss
+                )
 
         # Final checkpoint
-        self._save_checkpoint('final_meta_model.pt',
-                              self.total_meta_iterations, meta_loss)
-        print(f"\n[OK] MAML training complete. "
-              f"Best meta-loss: {best_meta_loss:.4f}")
+        self._save_checkpoint(
+            "final_meta_model.pt", self.total_meta_iterations, meta_loss
+        )
+        print(f"\n[OK] MAML training complete. Best meta-loss: {best_meta_loss:.4f}")
         return meta_loss_history
 
     # ------------------------------------------------------------------
-    def adapt_to_new_task(self, task: Dict,
-                          adaptation_steps: int = None) -> MAMLPolicy:
+    def adapt_to_new_task(self, task: Dict, adaptation_steps: int = None) -> MAMLPolicy:
         """
         Adapt meta-learned policy to a new task with few gradient steps.
         This is the key benefit of MAML — fast adaptation.
@@ -683,61 +719,84 @@ class MAMLTrainer:
     # ------------------------------------------------------------------
     def _save_checkpoint(self, filename: str, iteration: int, loss: float):
         path = os.path.join(self.checkpoint_dir, filename)
-        torch.save({
-            'iteration': iteration,
-            'policy_state_dict': self.policy.state_dict(),
-            'optimizer_state_dict': self.meta_optimizer.state_dict(),
-            'meta_loss': loss,
-            'config': {
-                'meta_lr': self.meta_lr,
-                'inner_lr': self.inner_lr,
-                'inner_steps': self.inner_steps,
-                'first_order': self.first_order,
+        torch.save(
+            {
+                "iteration": iteration,
+                "policy_state_dict": self.policy.state_dict(),
+                "optimizer_state_dict": self.meta_optimizer.state_dict(),
+                "meta_loss": loss,
+                "config": {
+                    "meta_lr": self.meta_lr,
+                    "inner_lr": self.inner_lr,
+                    "inner_steps": self.inner_steps,
+                    "first_order": self.first_order,
+                },
             },
-        }, path)
+            path,
+        )
 
     def load_checkpoint(self, path: str):
         """Load model checkpoint."""
         ckpt = torch.load(path, map_location=self.device)
         if self.policy is not None:
-            self.policy.load_state_dict(ckpt['policy_state_dict'])
-            self.meta_optimizer.load_state_dict(ckpt['optimizer_state_dict'])
-        print(f"[OK] Loaded checkpoint from {path} "
-              f"(iteration {ckpt['iteration']})")
+            self.policy.load_state_dict(ckpt["policy_state_dict"])
+            self.meta_optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+        print(f"[OK] Loaded checkpoint from {path} (iteration {ckpt['iteration']})")
 
 
 # ===========================================================================
 # CLI Entry Point
 # ===========================================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description='MAML Training for RAPCG-MetaRL')
-    parser.add_argument('--games', nargs='+',
-                        default=['zelda', 'sokoban', 'binary'],
-                        help='Games for the task distribution')
-    parser.add_argument('--representations', nargs='+',
-                        default=['narrow', 'wide', 'turtle'],
-                        help='Representation types')
-    parser.add_argument('--meta-lr', type=float, default=1e-3,
-                        help='Meta learning rate (outer loop, beta)')
-    parser.add_argument('--inner-lr', type=float, default=0.01,
-                        help='Inner loop learning rate (α)')
-    parser.add_argument('--inner-steps', type=int, default=5,
-                        help='Gradient steps per inner loop (K)')
-    parser.add_argument('--meta-batch', type=int, default=4,
-                        help='Tasks per meta-update')
-    parser.add_argument('--iterations', type=int, default=500,
-                        help='Total meta-training iterations')
-    parser.add_argument('--n-trajectories', type=int, default=128,
-                        help='Steps per trajectory collection')
-    parser.add_argument('--device', type=str, default='auto',
-                        choices=['auto', 'cuda', 'cpu'])
-    parser.add_argument('--second-order', action='store_true',
-                        help='Use full second-order MAML (slower)')
-    parser.add_argument('--experiment-name', type=str, default=None)
+    parser = argparse.ArgumentParser(description="MAML Training for RAPCG-MetaRL")
+    parser.add_argument(
+        "--games",
+        nargs="+",
+        default=["zelda", "sokoban", "binary"],
+        help="Games for the task distribution",
+    )
+    parser.add_argument(
+        "--representations",
+        nargs="+",
+        default=["narrow", "wide", "turtle"],
+        help="Representation types",
+    )
+    parser.add_argument(
+        "--meta-lr",
+        type=float,
+        default=1e-3,
+        help="Meta learning rate (outer loop, beta)",
+    )
+    parser.add_argument(
+        "--inner-lr", type=float, default=0.01, help="Inner loop learning rate (α)"
+    )
+    parser.add_argument(
+        "--inner-steps", type=int, default=5, help="Gradient steps per inner loop (K)"
+    )
+    parser.add_argument(
+        "--meta-batch", type=int, default=4, help="Tasks per meta-update"
+    )
+    parser.add_argument(
+        "--iterations", type=int, default=500, help="Total meta-training iterations"
+    )
+    parser.add_argument(
+        "--n-trajectories",
+        type=int,
+        default=128,
+        help="Steps per trajectory collection",
+    )
+    parser.add_argument(
+        "--device", type=str, default="auto", choices=["auto", "cuda", "cpu"]
+    )
+    parser.add_argument(
+        "--second-order",
+        action="store_true",
+        help="Use full second-order MAML (slower)",
+    )
+    parser.add_argument("--experiment-name", type=str, default=None)
 
     args = parser.parse_args()
 
