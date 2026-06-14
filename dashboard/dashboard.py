@@ -39,6 +39,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 try:
     from wrappers.helper import calculate_content_metrics
 except Exception:
+
     def calculate_content_metrics(level: np.ndarray) -> dict:
         unique, counts = np.unique(level, return_counts=True)
         probs = counts / max(1, counts.sum())
@@ -47,6 +48,7 @@ except Exception:
             "diversity": float(len(unique) / max(1, level.size)),
             "complexity": entropy,
         }
+
 
 # ── Styling ───────────────────────────────────────────────────────────────────
 st.markdown(
@@ -507,9 +509,7 @@ with st.sidebar:
         st.rerun()
 
 # ── Main tabs ─────────────────────────────────────────────────────────────────
-_legacy_tab_labels = (
-    ["⚡ Train", "🎲 Inference", "🗺 Levels", "📊 Logs", "⚖ Compare"]
-)
+_legacy_tab_labels = ["⚡ Train", "🎲 Inference", "🗺 Levels", "📊 Logs", "⚖ Compare"]
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 1 — TRAIN
@@ -627,7 +627,11 @@ with tab_train:
                     "Meta LR", min_value=1e-5, max_value=1e-1, value=1e-3, format="%.5f"
                 )
                 maml_inner_lr = st.number_input(
-                    "Inner LR", min_value=1e-5, max_value=1e-1, value=1e-2, format="%.5f"
+                    "Inner LR",
+                    min_value=1e-5,
+                    max_value=1e-1,
+                    value=1e-2,
+                    format="%.5f",
                 )
             maml_second_order = st.checkbox("Use second-order MAML", value=False)
         else:
@@ -660,9 +664,7 @@ with tab_train:
             )
             existing_pref_count = len(load_preferences(game))
             if feedback_source == "Dashboard preferences":
-                st.caption(
-                    f"{existing_pref_count} saved preference(s) for {game}."
-                )
+                st.caption(f"{existing_pref_count} saved preference(s) for {game}.")
             col_r1, col_r2 = st.columns(2)
             with col_r1:
                 rlhf_weight = st.slider(
@@ -685,9 +687,7 @@ with tab_train:
                 reward_epochs = st.number_input(
                     "Reward epochs", min_value=1, max_value=1000, value=100
                 )
-                reward_model_only = st.checkbox(
-                    "Reward model only", value=False
-                )
+                reward_model_only = st.checkbox("Reward model only", value=False)
         else:
             base_model_choice = "(random init)"
             feedback_source = "Synthetic preferences"
@@ -704,7 +704,9 @@ with tab_train:
         col_btn1, col_btn2 = st.columns(2)
         start_disabled = st.session_state.train_status == "running"
         if training_mode == "MAML meta-training":
-            start_disabled = start_disabled or not maml_games or not maml_representations
+            start_disabled = (
+                start_disabled or not maml_games or not maml_representations
+            )
         if (
             training_mode == "RLHF fine-tuning"
             and feedback_source == "Dashboard preferences"
@@ -1142,9 +1144,7 @@ with tab_feedback:
                         st.image(png_a, width="stretch")
                     else:
                         st.markdown(render_level_html(level_a), unsafe_allow_html=True)
-                    st.caption(
-                        f"{Path(pair[0]).name} | {format_metrics(level_a)}"
-                    )
+                    st.caption(f"{Path(pair[0]).name} | {format_metrics(level_a)}")
                 with col_b:
                     st.markdown("**B**")
                     png_b = pair[1].replace(".npy", ".png")
@@ -1152,9 +1152,7 @@ with tab_feedback:
                         st.image(png_b, width="stretch")
                     else:
                         st.markdown(render_level_html(level_b), unsafe_allow_html=True)
-                    st.caption(
-                        f"{Path(pair[1]).name} | {format_metrics(level_b)}"
-                    )
+                    st.caption(f"{Path(pair[1]).name} | {format_metrics(level_b)}")
 
                 col_p1, col_p2, col_p3 = st.columns(3)
                 preference = None
@@ -1174,8 +1172,12 @@ with tab_feedback:
                         {
                             "game": feedback_game,
                             "type": "dashboard_interactive",
-                            "source_a": Path(pair[0]).relative_to(PROJECT_ROOT).as_posix(),
-                            "source_b": Path(pair[1]).relative_to(PROJECT_ROOT).as_posix(),
+                            "source_a": Path(pair[0])
+                            .relative_to(PROJECT_ROOT)
+                            .as_posix(),
+                            "source_b": Path(pair[1])
+                            .relative_to(PROJECT_ROOT)
+                            .as_posix(),
                         },
                     )
                     st.session_state.rlhf_pair = None
