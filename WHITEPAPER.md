@@ -8,7 +8,7 @@ RAPCG-MetaRL is a research framework for training procedural content generation 
 
 The current implementation focuses on Zelda and Sokoban PCGRL tasks, with Binary support exposed through the same environment factory. Stable-Baselines3 provides PPO and A2C training, PyTorch supports MAML and RLHF extensions, and `gym-pcgrl` supplies the underlying problem definitions, representations, search engines, and reward statistics. Training produces Stable-Baselines3 checkpoint archives, step-level CSV logs, and generated levels in NumPy, text, and image form. A Streamlit dashboard and cross-platform command scripts provide repeatable access to training, inference, analysis, and visualization.
 
-The strongest completed comparison in the repository is PPO versus A2C on Zelda and Sokoban. PPO shows higher mean episode reward than A2C in the logged comparison table, with Zelda PPO improving from -8.54 early reward to +11.84 late reward and Sokoban PPO improving from +2.84 to +6.66. CUDA PPO runs reported average CPU use below 4 percent and average RAM use below 50 percent for the Zelda and Sokoban runs documented in `table.md`. MAML and RLHF code paths exist, and MAML timed inference artifacts are present, but full MAML and RLHF training results are not represented in the main algorithm comparison table.
+The strongest completed comparison in the repository is PPO versus A2C on Zelda and Sokoban. PPO shows higher mean episode reward than A2C in the logged comparison table, with Zelda PPO improving from -8.54 early reward to +11.84 late reward and Sokoban PPO improving from +2.84 to +6.66. CUDA PPO runs reported average CPU use below 4 percent and average RAM use below 50 percent for the Zelda and Sokoban runs documented in `table.md`. MAML and RLHF code paths exist. A completed MAML training run on Sokoban narrow (500 iterations, meta-batch 2, inner steps 3) produced a best meta-loss of 8.1543 at iteration 31, with average CPU at 5.2%, average RAM at 57.8%, and average GPU at 14.8%. Full MAML training metrics are documented in the MAML Training Results section. RLHF training results are not yet fully represented in the main comparison table.
 
 ## The Systemic Problem
 
@@ -134,21 +134,42 @@ These results indicate PPO reached stronger final rewards than A2C on both docum
 | Mean complexity         |                0.8300 |                  0.9667 |                          0.8800 |                          0.9667 |
 | Resource note           |     7.2% to 8.3% VRAM |     10.3% to 10.6% VRAM | 7.0% mean CPU, 0.07% RAM change | 2.5% mean CPU, 0.00% RAM change |
 
-### MAML Artifact Status
+### MAML Training Results
 
-The repository contains MAML checkpoints and a timed inference CSV. The file `inference_timing_maml.csv` contains 1,000 rows for Sokoban MAML inference. Its measured averages are:
+A completed MAML training run was conducted on Sokoban with the narrow representation. Training used first-order MAML (FOMAML) for computational efficiency. The experiment name is `sokoban_MAML_inference` and the log is available at `logs/sokoban_MAML_inference.csv`.
 
-| Metric                       |   MAML Sokoban Timed Inference |
-| ---------------------------- | -----------------------------: |
-| Levels                       |                          1,000 |
-| Mean total time              |                    1,604.63 ms |
-| Mean generation time         |                    1,594.54 ms |
-| Mean inference per step      |                       1.879 ms |
-| Mean steps per level         |                          12.54 |
-| Mean total reward            |                           7.77 |
-| Mean diversity               |                         0.1947 |
-| Mean complexity              |                         0.9988 |
-| Full training comparison row | TBD, not present in `table.md` |
+| Metric                 | MAML Sokoban Narrow (CUDA) |
+| ---------------------- | -------------------------: |
+| Iterations             |                        500 |
+| Meta-batch size        |                          2 |
+| Inner steps (K)        |                          3 |
+| Trajectories per task  |                         64 |
+| Best meta-loss         |                     8.1543 |
+| Best loss at iteration |                         31 |
+| Final meta-loss        |                  22386.084 |
+| Mean meta-loss         |                  14307.817 |
+| Loss std               |                  12450.299 |
+| Average CPU            |                       5.2% |
+| Average RAM            |              57.8%, ~9.2GB |
+| Average GPU VRAM       |                      14.8% |
+| Device                 |   NVIDIA RTX 3060 Ti, CUDA |
+
+Publication-quality convergence analysis figures are produced by `analyze_maml_results.py` and saved under `figures/maml/sokoban_MAML_inference/`. Output includes meta-loss convergence curves, resource utilization panels, reward proxy distribution, training phase analysis, and a summary dashboard. All figures are saved as PDF (ACM TOG vector-safe) and PNG at 300 DPI.
+
+### MAML Timed Inference Artifacts
+
+The repository also contains a prior MAML timed inference CSV. The file `inference_timing_maml.csv` contains 1,000 rows for Sokoban MAML inference. Its measured averages are:
+
+| Metric                  | MAML Sokoban Timed Inference |
+| ----------------------- | ---------------------------: |
+| Levels                  |                        1,000 |
+| Mean total time         |                  1,604.63 ms |
+| Mean generation time    |                  1,594.54 ms |
+| Mean inference per step |                     1.879 ms |
+| Mean steps per level    |                        12.54 |
+| Mean total reward       |                         7.77 |
+| Mean diversity          |                       0.1947 |
+| Mean complexity         |                       0.9988 |
 
 ### RLHF Artifact Status
 
