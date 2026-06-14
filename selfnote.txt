@@ -27,3 +27,7 @@ python maml_trainer.py --games sokoban --representations narrow --iterations 2 -
 python3.10 inference_timed.py checkpoints/zelda_PPO_CUDA_20260228_113105/final_model.zip --game zelda --algorithm PPO --n-levels 20 --max-steps 500 --save-dir generated_levels/zelda_PPO_AMD_20260228_113105 --log-file inference_timing_zelda_PPO_AMD_20260228_113105.csv --device cpu --trust-model
 
 python3.10 inference_timed.py checkpoints/sokoban_PPO_CUDA_20260220_140931/final_model.zip --game sokoban --algorithm PPO --n-levels 20 --max-steps 500 --save-dir generated_levels/sokoban_PPO_AMD_20260220_140931 --log-file inference_timing_sokoban_PPO_AMD_20260220_140931.csv --device cpu --trust-model
+
+python maml_trainer.py --games sokoban --representations narrow --iterations 50 --meta-batch 2 --inner-steps 3 --n-trajectories 64 --device cuda --experiment-name sokoban_MAML_inference
+
+python maml_inference_timed.py checkpoints/sokoban_MAML_inference/best_meta_model.pt --game sokoban --n-levels 40 --max-steps 10000 --device cuda
