@@ -24,7 +24,7 @@ from datetime import datetime
 import argparse
 
 # Project paths
-project_root = os.path.dirname(os.path.abspath(__file__ ))
+project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 sys.path.append(os.path.join(project_root, "gym-pcgrl"))
 
@@ -45,28 +45,29 @@ class MAMLPolicy(nn.Module):
     A simple MLP Policy (Actor-Critic) that supports functional forward passes
     by taking an external dictionary of parameters (weights/biases).
     """
+
     def __init__(self, input_dim: int, action_dim: int, hidden_dim: int = 64):
         super(MAMLPolicy, self).__init__()
         self.input_dim = input_dim
         self.action_dim = action_dim
-        
+
         # Structure matching standard PyTorch / Stable-Baselines3 MLP layouts
         self.actor = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.Tanh(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.Tanh(),
-            nn.Linear(hidden_dim, action_dim)
+            nn.Linear(hidden_dim, action_dim),
         )
-        
+
         self.critic = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.Tanh(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.Tanh(),
-            nn.Linear(hidden_dim, 1)
+            nn.Linear(hidden_dim, 1),
         )
-        
+
         # Guard flag for printing key structure verification once
         self._keys_verified = False
 
@@ -76,7 +77,9 @@ class MAMLPolicy(nn.Module):
         value = self.critic(obs)
         return action_logits, value
 
-    def functional_forward(self, obs: torch.Tensor, params: dict) -> Tuple[torch.Tensor, torch.Tensor]:
+    def functional_forward(
+        self, obs: torch.Tensor, params: dict
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Computes forward pass via explicit structural grouping of keys.
         Extracts indices dynamically, sorting them to maintain proper execution order,
@@ -87,33 +90,46 @@ class MAMLPolicy(nn.Module):
             sample_keys = list(params.keys())
             print(f"\n[SANITY CHECK] Verifying state dictionary key formatting...")
             print(f"[SANITY CHECK] First 5 keys in parameter map: {sample_keys[:5]}")
-            
+
             # Verify the delimiter structure splits safely into an expected layer integer
             try:
-                test_key = [k for k in sample_keys if "actor." in k and ".weight" in k][0]
-                parts = test_key.split('.')
+                test_key = [k for k in sample_keys if "actor." in k and ".weight" in k][
+                    0
+                ]
+                parts = test_key.split(".")
                 _ = int(parts[1])  # Ensure position [1] holds a valid layer digit
-                print(f"[SANITY CHECK] Success: Key format matches standard dot-notation index sequence ('{test_key}').\n")
+                print(
+                    f"[SANITY CHECK] Success: Key format matches standard dot-notation index sequence ('{test_key}').\n"
+                )
             except Exception as e:
-                print(f"[WARNING] Parameter dict key layout did not match expected 'actor.[index].weight' format.")
-                print(f"[WARNING] Found keys format: {sample_keys[:3]}. Exception details: {str(e)}")
-            
+                print(
+                    f"[WARNING] Parameter dict key layout did not match expected 'actor.[index].weight' format."
+                )
+                print(
+                    f"[WARNING] Found keys format: {sample_keys[:3]}. Exception details: {str(e)}"
+                )
+
             self._keys_verified = True
 
         def _forward_network(x: torch.Tensor, prefix: str) -> torch.Tensor:
             # Step 1: Isolate and sort numeric structural layer positions
-            layer_ids = sorted(list(set(
-                int(k.split('.')[1]) for k in params.keys()
-                if k.startswith(prefix) and ('.weight' in k or '.bias' in k)
-            )))
-            
+            layer_ids = sorted(
+                list(
+                    set(
+                        int(k.split(".")[1])
+                        for k in params.keys()
+                        if k.startswith(prefix) and (".weight" in k or ".bias" in k)
+                    )
+                )
+            )
+
             # Step 2: Iterate and process through the layers in structural order
             for idx, layer_id in enumerate(layer_ids):
                 w = params[f"{prefix}.{layer_id}.weight"]
                 b = params[f"{prefix}.{layer_id}.bias"]
-                
+
                 x = torch.matmul(x, w.t()) + b
-                
+
                 # Apply Tanh to intermediate layers only; leave output layer un-activated
                 if idx < len(layer_ids) - 1:
                     x = torch.tanh(x)
@@ -162,7 +178,7 @@ class MAMLTrainer:
             self.obs_dim = np.prod(self.proxy_env.observation_space.spaces["map"].shape)
         else:
             self.obs_dim = np.prod(self.proxy_env.observation_space.shape)
-            
+
         self.action_dim = self.proxy_env.action_space.n
         self.proxy_env.close()
 
@@ -172,44 +188,52 @@ class MAMLTrainer:
 
         # Telemetry & Experiment Management Structures
         self.resource_monitor = ResourceMonitor()
-        exp_tag = experiment_name if experiment_name else f"MAML_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        exp_tag = (
+            experiment_name
+            if experiment_name
+            else f"MAML_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
         self.checkpoint_dir = create_checkpoint_dir(f"checkpoints/{exp_tag}")
         self.logger = TrainingLogger(log_dir="logs", experiment_name=exp_tag)
 
-    def sample_trajectory(self, env, policy, params: dict) -> List[Tuple[np.ndarray, int, float]]:
+    def sample_trajectory(
+        self, env, policy, params: dict
+    ) -> List[Tuple[np.ndarray, int, float]]:
         """Collects trajectories using parameter weights mapped via functional evaluation passes."""
         trajectory = []
         obs = env.reset()
         if isinstance(obs, dict):
             obs = obs["map"]
-            
+
         for _ in range(self.n_trajectories):
             obs_t = torch.FloatTensor(obs.flatten()).unsqueeze(0).to(self.device)
             with torch.no_grad():
                 logits, _ = policy.functional_forward(obs_t, params)
                 action_probs = torch.softmax(logits, dim=-1)
                 action = torch.multinomial(action_probs, num_samples=1).item()
-                
+
             next_obs, reward, done, info = env.step(action)
             trajectory.append((obs.flatten(), action, float(reward)))
-            
+
             if isinstance(next_obs, dict):
                 obs = next_obs["map"]
             else:
                 obs = next_obs
-                
+
             if done:
                 obs = env.reset()
                 if isinstance(obs, dict):
                     obs = obs["map"]
         return trajectory
 
-    def compute_loss(self, policy, params: dict, trajectory: List[Tuple[np.ndarray, int, float]]) -> torch.Tensor:
+    def compute_loss(
+        self, policy, params: dict, trajectory: List[Tuple[np.ndarray, int, float]]
+    ) -> torch.Tensor:
         """Computes basic reinforcing negative policy log-likelihoods over collected targets."""
         loss = torch.tensor(0.0, device=self.device)
         if not trajectory:
             return loss
-            
+
         states, actions, rewards = zip(*trajectory)
         states_t = torch.FloatTensor(np.array(states)).to(self.device)
         actions_t = torch.LongTensor(actions).to(self.device)
@@ -222,24 +246,28 @@ class MAMLTrainer:
             running_add = running_add * 0.99 + rewards_t[t]
             discounted_rewards[t] = running_add
         if len(discounted_rewards) > 1:
-            discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (discounted_rewards.std() + 1e-8)
+            discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (
+                discounted_rewards.std() + 1e-8
+            )
 
         logits, _ = policy.functional_forward(states_t, params)
         log_probs = torch.log_softmax(logits, dim=-1)
         action_log_probs = log_probs.gather(1, actions_t.unsqueeze(1)).squeeze(1)
-        
+
         loss = -(action_log_probs * discounted_rewards).mean()
         return loss
 
     def train(self):
         """Main Meta-Optimization loop execution block."""
-        print(f"Beginning Meta-Learning routine across tasks ({self.games} x {self.representations}).")
+        print(
+            f"Beginning Meta-Learning routine across tasks ({self.games} x {self.representations})."
+        )
         start_time = time.time()
 
         for iteration in range(self.iterations):
             self.meta_optimizer.zero_grad()
             meta_outer_loss = torch.tensor(0.0, device=self.device)
-            
+
             # Pack current base parameters map values
             meta_weights = OrderedDict(self.meta_policy.state_dict())
             iteration_rewards = []
@@ -247,25 +275,25 @@ class MAMLTrainer:
             for task_idx in range(self.meta_batch):
                 game = np.random.choice(self.games)
                 rep = np.random.choice(self.representations)
-                
+
                 env = make_pcgrl_env(game, rep)
-                
+
                 # Copy baseline structural weight graph to local fast-adaptation context
                 task_weights = copy.deepcopy(meta_weights)
-                
+
                 # --- Step 1: Inner Adaptation Steps Loop (Fast Weight Adjustments) ---
                 for step in range(self.inner_steps):
                     traj = self.sample_trajectory(env, self.meta_policy, task_weights)
                     if traj:
                         iteration_rewards.append(np.sum([t[2] for t in traj]))
                     inner_loss = self.compute_loss(self.meta_policy, task_weights, traj)
-                    
+
                     if inner_loss.item() != 0:
                         grads = torch.autograd.grad(
-                            inner_loss, 
-                            task_weights.values(), 
+                            inner_loss,
+                            task_weights.values(),
                             create_graph=self.second_order,
-                            allow_unused=True
+                            allow_unused=True,
                         )
                         # Perform explicit gradient step adjustments across our parameter maps
                         updated_weights = OrderedDict()
@@ -277,10 +305,14 @@ class MAMLTrainer:
                         task_weights = updated_weights
 
                 # --- Step 2: Meta-Update Evaluation (Evaluate updated weights on a new trajectory) ---
-                post_adapt_traj = self.sample_trajectory(env, self.meta_policy, task_weights)
-                outer_loss = self.compute_loss(self.meta_policy, task_weights, post_adapt_traj)
+                post_adapt_traj = self.sample_trajectory(
+                    env, self.meta_policy, task_weights
+                )
+                outer_loss = self.compute_loss(
+                    self.meta_policy, task_weights, post_adapt_traj
+                )
                 meta_outer_loss += outer_loss
-                
+
                 env.close()
 
             # --- Step 3: Global Meta-Update Parameter Modification ---
@@ -292,7 +324,7 @@ class MAMLTrainer:
             # Track real-time compute diagnostics to avoid crashing under hardware limits
             res_stats = self.resource_monitor.get_resources()
             mean_rewards = np.mean(iteration_rewards) if iteration_rewards else 0.0
-            
+
             # Format logs to save tracking metrics
             log_metrics = {
                 "step": iteration,
@@ -301,25 +333,33 @@ class MAMLTrainer:
                 "cpu_percent": res_stats["cpu_percent"],
                 "ram_percent": res_stats["ram_percent"],
                 "gpu_percent": res_stats["gpu_percent"],
-                "fps": float(iteration) / (time.time() - start_time + 1e-5)
+                "fps": float(iteration) / (time.time() - start_time + 1e-5),
             }
             self.logger.log_step(log_metrics)
 
             if iteration % 20 == 0 or iteration == self.iterations - 1:
-                print(f"Iteration {iteration:03d}/{self.iterations} | "
-                      f"Outer Loss: {meta_outer_loss.item():.4f} | "
-                      f"Avg Reward: {mean_rewards:.2f} | "
-                      f"RAM: {res_stats['ram_percent']}% | "
-                      f"GPU: {res_stats['gpu_percent']}%")
-                
-                # Persist stable parameters checkpoints
-                torch.save(self.meta_policy.state_dict(), os.path.join(self.checkpoint_dir, "best_meta_model.pt"))
+                print(
+                    f"Iteration {iteration:03d}/{self.iterations} | "
+                    f"Outer Loss: {meta_outer_loss.item():.4f} | "
+                    f"Avg Reward: {mean_rewards:.2f} | "
+                    f"RAM: {res_stats['ram_percent']}% | "
+                    f"GPU: {res_stats['gpu_percent']}%"
+                )
 
-        print(f"Meta-Training completed. Weights saved inside folder: '{self.checkpoint_dir}'")
+                # Persist stable parameters checkpoints
+                torch.save(
+                    self.meta_policy.state_dict(),
+                    os.path.join(self.checkpoint_dir, "best_meta_model.pt"),
+                )
+
+        print(
+            f"Meta-Training completed. Weights saved inside folder: '{self.checkpoint_dir}'"
+        )
 
 
 if __name__ == "__main__":
     import time
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--games", nargs="+", default=["zelda", "sokoban"])
     parser.add_argument("--representations", nargs="+", default=["narrow", "turtle"])
@@ -346,6 +386,6 @@ if __name__ == "__main__":
         n_trajectories=args.n_trajectories,
         device=args.device,
         second_order=args.second_order,
-        experiment_name=args.experiment_name
+        experiment_name=args.experiment_name,
     )
     trainer.train()
