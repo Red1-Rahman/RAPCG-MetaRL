@@ -11,6 +11,7 @@ import threading
 import queue
 import glob
 import json
+import random
 from datetime import datetime
 from pathlib import Path
 
@@ -34,6 +35,18 @@ if not Path(PY).exists():
     PY = str(PROJECT_ROOT / "pcg_env" / "Scripts" / "python.exe")
 
 sys.path.insert(0, str(PROJECT_ROOT))
+
+try:
+    from wrappers.helper import calculate_content_metrics
+except Exception:
+    def calculate_content_metrics(level: np.ndarray) -> dict:
+        unique, counts = np.unique(level, return_counts=True)
+        probs = counts / max(1, counts.sum())
+        entropy = float(-(probs * np.log2(probs + 1e-12)).sum())
+        return {
+            "diversity": float(len(unique) / max(1, level.size)),
+            "complexity": entropy,
+        }
 
 # ── Styling ───────────────────────────────────────────────────────────────────
 st.markdown(
@@ -224,6 +237,8 @@ def init_state():
         "infer_log": [],
         "infer_status": "idle",
         "generated_levels": [],
+        "rlhf_pair": None,
+        "rlhf_pair_source": None,
         "log_queue": queue.Queue(),
         "last_refresh": time.time(),
     }
@@ -325,6 +340,68 @@ def load_level(path: str) -> np.ndarray:
         return np.load(path)
     except Exception:
         return None
+
+
+def preference_file(game: str) -> Path:
+    return PROJECT_ROOT / "data" / "preferences" / game / "preferences.json"
+
+
+def load_preferences(game: str) -> list:
+    path = preference_file(game)
+    if not path.exists():
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def save_dashboard_preference(
+    game: str,
+    level_a: np.ndarray,
+    level_b: np.ndarray,
+    preference: float,
+    metadata: dict,
+) -> int:
+    path = preference_file(game)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    prefs = load_preferences(game)
+    prefs.append(
+        {
+            "level_a": level_a.tolist(),
+            "level_b": level_b.tolist(),
+            "preference": preference,
+            "metrics_a": calculate_content_metrics(level_a),
+            "metrics_b": calculate_content_metrics(level_b),
+            "metadata": metadata,
+            "timestamp": datetime.now().isoformat(),
+        }
+    )
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(prefs, f, indent=2, default=str)
+    return len(prefs)
+
+
+def format_metrics(level: np.ndarray) -> str:
+    metrics = calculate_content_metrics(level)
+    return "div={:.3f}  complexity={:.3f}".format(
+        metrics.get("diversity", 0.0),
+        metrics.get("complexity", 0.0),
+    )
+
+
+def select_feedback_pair(files: list, source_key: str) -> tuple:
+    if len(files) < 2:
+        return None
+    cached = st.session_state.rlhf_pair
+    if cached and st.session_state.rlhf_pair_source == source_key:
+        if all(Path(p).exists() for p in cached):
+            return cached
+    pair = tuple(random.sample(files, 2))
+    st.session_state.rlhf_pair = pair
+    st.session_state.rlhf_pair_source = source_key
+    return pair
 
 
 def resource_color(pct: float) -> str:
@@ -430,13 +507,17 @@ with st.sidebar:
         st.rerun()
 
 # ── Main tabs ─────────────────────────────────────────────────────────────────
-tab_train, tab_infer, tab_levels, tab_logs, tab_compare = st.tabs(
+_legacy_tab_labels = (
     ["⚡ Train", "🎲 Inference", "🗺 Levels", "📊 Logs", "⚖ Compare"]
 )
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 1 — TRAIN
 # ══════════════════════════════════════════════════════════════════════════════
+tab_train, tab_infer, tab_levels, tab_feedback, tab_logs, tab_compare = st.tabs(
+    ["Train", "Inference", "Levels", "RLHF Feedback", "Logs", "Compare"]
+)
+
 with tab_train:
     st.markdown(
         '<div class="section-header">Training Configuration</div>',
@@ -447,8 +528,13 @@ with tab_train:
 
     with col_cfg:
         # Config form
+        training_mode = st.selectbox(
+            "Workflow",
+            ["Standard PPO/A2C/SAC", "MAML meta-training", "RLHF fine-tuning"],
+            index=0,
+        )
         game = st.selectbox("Game", ["zelda", "sokoban", "binary"], index=0)
-        algo = st.selectbox("Algorithm", ["PPO", "A2C"], index=0)
+        algo = st.selectbox("Algorithm", ["PPO", "A2C", "SAC"], index=0)
         representation = st.selectbox(
             "Representation", ["narrow", "wide", "turtle"], index=0
         )
@@ -510,15 +596,126 @@ with tab_train:
             placeholder="auto-generated if blank",
         )
 
+        if training_mode == "MAML meta-training":
+            st.markdown("**MAML settings**")
+            maml_games = st.multiselect(
+                "Task games",
+                ["zelda", "sokoban", "binary"],
+                default=["zelda", "sokoban", "binary"],
+            )
+            maml_representations = st.multiselect(
+                "Task representations",
+                ["narrow", "wide", "turtle"],
+                default=["narrow", "wide", "turtle"],
+            )
+            col_m1, col_m2 = st.columns(2)
+            with col_m1:
+                maml_iterations = st.number_input(
+                    "Meta iterations", min_value=1, max_value=10_000, value=500
+                )
+                maml_meta_batch = st.number_input(
+                    "Meta batch", min_value=1, max_value=16, value=4
+                )
+                maml_inner_steps = st.number_input(
+                    "Inner steps", min_value=1, max_value=50, value=5
+                )
+            with col_m2:
+                maml_trajectories = st.number_input(
+                    "Trajectory steps", min_value=16, max_value=2048, value=128, step=16
+                )
+                maml_meta_lr = st.number_input(
+                    "Meta LR", min_value=1e-5, max_value=1e-1, value=1e-3, format="%.5f"
+                )
+                maml_inner_lr = st.number_input(
+                    "Inner LR", min_value=1e-5, max_value=1e-1, value=1e-2, format="%.5f"
+                )
+            maml_second_order = st.checkbox("Use second-order MAML", value=False)
+        else:
+            maml_games = []
+            maml_representations = []
+            maml_iterations = 500
+            maml_meta_batch = 4
+            maml_inner_steps = 5
+            maml_trajectories = 128
+            maml_meta_lr = 1e-3
+            maml_inner_lr = 1e-2
+            maml_second_order = False
+
+        if training_mode == "RLHF fine-tuning":
+            st.markdown("**RLHF settings**")
+            zip_checkpoints = [c for c in find_checkpoints() if c.endswith(".zip")]
+            base_options = ["(random init)"] + zip_checkpoints
+            base_model_choice = st.selectbox(
+                "Base PPO model",
+                base_options,
+                format_func=lambda p: p
+                if p == "(random init)"
+                else Path(p).relative_to(PROJECT_ROOT).as_posix(),
+            )
+            feedback_source = st.selectbox(
+                "Feedback source",
+                ["Dashboard preferences", "Synthetic preferences"],
+                index=0,
+                help="Collect real human labels in the RLHF Feedback tab.",
+            )
+            existing_pref_count = len(load_preferences(game))
+            if feedback_source == "Dashboard preferences":
+                st.caption(
+                    f"{existing_pref_count} saved preference(s) for {game}."
+                )
+            col_r1, col_r2 = st.columns(2)
+            with col_r1:
+                rlhf_weight = st.slider(
+                    "Human reward weight", min_value=0.0, max_value=1.0, value=0.5
+                )
+                rlhf_levels = st.number_input(
+                    "Feedback levels", min_value=2, max_value=500, value=50
+                )
+                rlhf_comparisons = st.number_input(
+                    "Comparisons", min_value=1, max_value=500, value=50
+                )
+            with col_r2:
+                rlhf_timesteps = st.number_input(
+                    "Fine-tune timesteps",
+                    min_value=0,
+                    max_value=1_000_000,
+                    value=50_000,
+                    step=5_000,
+                )
+                reward_epochs = st.number_input(
+                    "Reward epochs", min_value=1, max_value=1000, value=100
+                )
+                reward_model_only = st.checkbox(
+                    "Reward model only", value=False
+                )
+        else:
+            base_model_choice = "(random init)"
+            feedback_source = "Synthetic preferences"
+            existing_pref_count = 0
+            rlhf_weight = 0.5
+            rlhf_levels = 50
+            rlhf_comparisons = 50
+            rlhf_timesteps = 50_000
+            reward_epochs = 100
+            reward_model_only = False
+
         st.markdown("---")
 
         col_btn1, col_btn2 = st.columns(2)
+        start_disabled = st.session_state.train_status == "running"
+        if training_mode == "MAML meta-training":
+            start_disabled = start_disabled or not maml_games or not maml_representations
+        if (
+            training_mode == "RLHF fine-tuning"
+            and feedback_source == "Dashboard preferences"
+        ):
+            start_disabled = start_disabled or existing_pref_count == 0
         with col_btn1:
             start_clicked = st.button(
                 "▶ Start Training",
                 type="primary",
                 use_container_width=True,
-                disabled=(st.session_state.train_status == "running"),
+                disabled=start_disabled,
             )
         with col_btn2:
             stop_clicked = st.button(
@@ -581,7 +778,65 @@ with tab_train:
         st.session_state.train_status = "running"
         st.session_state.train_start_time = time.time()
 
-        if use_backward and game == "sokoban":
+        if training_mode == "MAML meta-training":
+            cmd = [
+                PY,
+                str(PROJECT_ROOT / "maml_trainer.py"),
+                "--games",
+                *maml_games,
+                "--representations",
+                *maml_representations,
+                "--meta-lr",
+                str(maml_meta_lr),
+                "--inner-lr",
+                str(maml_inner_lr),
+                "--inner-steps",
+                str(maml_inner_steps),
+                "--meta-batch",
+                str(maml_meta_batch),
+                "--iterations",
+                str(maml_iterations),
+                "--n-trajectories",
+                str(maml_trajectories),
+                "--device",
+                device,
+            ]
+            if maml_second_order:
+                cmd.append("--second-order")
+            if experiment_name.strip():
+                cmd += ["--experiment-name", experiment_name.strip()]
+        elif training_mode == "RLHF fine-tuning":
+            cmd = [
+                PY,
+                str(PROJECT_ROOT / "rlhf_trainer.py"),
+                "--game",
+                game,
+                "--representation",
+                representation,
+                "--rlhf-weight",
+                str(rlhf_weight),
+                "--n-levels",
+                str(rlhf_levels),
+                "--n-comparisons",
+                str(rlhf_comparisons),
+                "--timesteps",
+                str(rlhf_timesteps),
+                "--reward-epochs",
+                str(reward_epochs),
+                "--device",
+                device,
+            ]
+            if base_model_choice != "(random init)":
+                cmd += ["--base-model", base_model_choice]
+            if feedback_source == "Dashboard preferences":
+                cmd.append("--use-existing-preferences")
+            else:
+                cmd.append("--synthetic")
+            if reward_model_only:
+                cmd.append("--reward-model-only")
+            if experiment_name.strip():
+                cmd += ["--experiment-name", experiment_name.strip()]
+        elif use_backward and game == "sokoban":
             cmd = [
                 PY,
                 str(PROJECT_ROOT / "train_backward.py"),
@@ -834,6 +1089,100 @@ with tab_levels:
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 4 — LOGS
 # ══════════════════════════════════════════════════════════════════════════════
+with tab_feedback:
+    st.markdown(
+        '<div class="section-header">RLHF Human Preference Collection</div>',
+        unsafe_allow_html=True,
+    )
+
+    feedback_game = st.selectbox(
+        "Feedback game", ["zelda", "sokoban", "binary"], key="feedback_game"
+    )
+    pref_count = len(load_preferences(feedback_game))
+    pref_path = preference_file(feedback_game).relative_to(PROJECT_ROOT).as_posix()
+    st.caption(f"{pref_count} saved preference(s) in {pref_path}")
+
+    level_files = find_level_files()
+    if len(level_files) < 2:
+        st.info("Generate at least two levels first, then return here to label pairs.")
+    else:
+        dirs = sorted(set(str(Path(f).parent) for f in level_files))
+        dir_labels = [Path(d).relative_to(PROJECT_ROOT).as_posix() for d in dirs]
+        selected_feedback_dir_idx = st.selectbox(
+            "Level source",
+            range(len(dir_labels)),
+            format_func=lambda i: dir_labels[i],
+            key="feedback_dir",
+        )
+        selected_feedback_dir = dirs[selected_feedback_dir_idx]
+        files_in_feedback_dir = [
+            f for f in level_files if str(Path(f).parent) == selected_feedback_dir
+        ]
+
+        source_key = f"{feedback_game}:{selected_feedback_dir}"
+        if st.button("New Pair", key="rlhf_new_pair"):
+            st.session_state.rlhf_pair = None
+            st.session_state.rlhf_pair_source = None
+            st.rerun()
+
+        pair = select_feedback_pair(files_in_feedback_dir, source_key)
+        if pair is None:
+            st.warning("This level source needs at least two .npy files.")
+        else:
+            level_a = load_level(pair[0])
+            level_b = load_level(pair[1])
+            if level_a is None or level_b is None:
+                st.error("Could not load one of the selected level files.")
+            else:
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    st.markdown("**A**")
+                    png_a = pair[0].replace(".npy", ".png")
+                    if Path(png_a).exists():
+                        st.image(png_a, width="stretch")
+                    else:
+                        st.markdown(render_level_html(level_a), unsafe_allow_html=True)
+                    st.caption(
+                        f"{Path(pair[0]).name} | {format_metrics(level_a)}"
+                    )
+                with col_b:
+                    st.markdown("**B**")
+                    png_b = pair[1].replace(".npy", ".png")
+                    if Path(png_b).exists():
+                        st.image(png_b, width="stretch")
+                    else:
+                        st.markdown(render_level_html(level_b), unsafe_allow_html=True)
+                    st.caption(
+                        f"{Path(pair[1]).name} | {format_metrics(level_b)}"
+                    )
+
+                col_p1, col_p2, col_p3 = st.columns(3)
+                preference = None
+                if col_p1.button("Prefer A", type="primary", use_container_width=True):
+                    preference = 0.0
+                if col_p2.button("Tie", use_container_width=True):
+                    preference = 0.5
+                if col_p3.button("Prefer B", type="primary", use_container_width=True):
+                    preference = 1.0
+
+                if preference is not None:
+                    total = save_dashboard_preference(
+                        feedback_game,
+                        level_a,
+                        level_b,
+                        preference,
+                        {
+                            "game": feedback_game,
+                            "type": "dashboard_interactive",
+                            "source_a": Path(pair[0]).relative_to(PROJECT_ROOT).as_posix(),
+                            "source_b": Path(pair[1]).relative_to(PROJECT_ROOT).as_posix(),
+                        },
+                    )
+                    st.session_state.rlhf_pair = None
+                    st.session_state.rlhf_pair_source = None
+                    st.success(f"Saved preference #{total}.")
+                    st.rerun()
+
 with tab_logs:
     st.markdown(
         '<div class="section-header">Training Logs</div>', unsafe_allow_html=True

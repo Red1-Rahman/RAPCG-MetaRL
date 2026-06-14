@@ -927,6 +927,14 @@ if __name__ == "__main__":
         help="Only train reward model, skip PPO fine-tuning",
     )
     parser.add_argument(
+        "--use-existing-preferences",
+        action="store_true",
+        help=(
+            "Train from preferences already saved under data/preferences/<game>/ "
+            "instead of generating a new feedback batch"
+        ),
+    )
+    parser.add_argument(
         "--device", type=str, default="auto", choices=["auto", "cuda", "cpu"]
     )
     parser.add_argument("--experiment-name", type=str, default=None)
@@ -944,7 +952,11 @@ if __name__ == "__main__":
         experiment_name=args.experiment_name,
     )
 
-    if args.reward_model_only:
+    if args.use_existing_preferences:
+        reward_model = trainer.train_reward_model()
+        if not args.reward_model_only:
+            trainer.fine_tune_with_rlhf(reward_model)
+    elif args.reward_model_only:
         levels = trainer.generate_levels_for_feedback(args.n_levels)
         trainer.collect_preferences(
             levels,
