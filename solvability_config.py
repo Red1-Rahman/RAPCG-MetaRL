@@ -29,7 +29,7 @@ SOKOBAN_SOLVABILITY_REWARDS = {
     "regions": 10,  # CRITICAL: Single connected region (was 5)
     "ratio": 5,  # CRITICAL: Crates must equal targets (was 2)
     "dist-win": 5,  # CRITICAL: Solvability check (was 0.0!)
-    "sol-length": 3,  # Longer solutions are more interesting (was 1)
+    "sol-length": 5,  # Longer solutions are more interesting (was 1, raised from 3)
 }
 
 SOKOBAN_SOLVABILITY_PARAMS = {

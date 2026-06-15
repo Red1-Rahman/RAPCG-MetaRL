@@ -35,7 +35,7 @@ sys.path.append(os.path.join(project_root, "gym-pcgrl"))
 from utils import ResourceMonitor, TrainingLogger
 from wrappers.pcgrl_env import make_pcgrl_env
 from wrappers.helper import calculate_content_metrics, save_level
-from maml_trainer import MAMLPolicy, DictFlattenWrapper
+from maml_trainer import MAMLPolicy, DictFlattenWrapper, SokobanDeadlockGuardrail
 
 try:
     from visualize_levels import save_level_image
@@ -155,6 +155,10 @@ def build_env(
             representation=representation,
             use_solvability_config=True,
         )
+        # Mirror the training-time deadlock guardrail so adaptation gradients
+        # match the reward landscape the meta-policy was trained against.
+        if game == "sokoban":
+            env = SokobanDeadlockGuardrail(env, deadlock_penalty=1.5)
         if isinstance(env.observation_space, gym.spaces.Dict):
             env = DictFlattenWrapper(env)
         return env
@@ -266,7 +270,7 @@ class LiveCSVWriter:
         )
         self._w.writeheader()
         self._fh.flush()
-        print(f"[OK] Timing CSV  → {path}  (flushed after every level)")
+        print(f"[OK] Timing CSV  -> {path}  (flushed after every level)")
 
     def write(self, row: dict):
         self._w.writerow(row)
@@ -309,11 +313,11 @@ def generate_timed(
         experiment_name = f"MAML_inference_{game}_{ts}"
 
     # ---- Loggers ---------------------------------------------------------
-    # 1. TrainingLogger  → logs/<experiment_name>.csv  (step-level live log)
+    # 1. TrainingLogger  -> logs/<experiment_name>.csv  (step-level live log)
     training_logger = TrainingLogger(log_dir=log_dir, experiment_name=experiment_name)
-    print(f"[OK] TrainingLogger → {log_dir}/{experiment_name}.csv")
+    print(f"[OK] TrainingLogger -> {log_dir}/{experiment_name}.csv")
 
-    # 2. LiveCSVWriter   → --log-file (level-level timing CSV, flushed live)
+    # 2. LiveCSVWriter   -> --log-file (level-level timing CSV, flushed live)
     csv_writer = LiveCSVWriter(log_file)
 
     use_gpu = device == "cuda"
@@ -334,7 +338,7 @@ def generate_timed(
     setup_start = time.perf_counter()
     env = build_env(game, representation, resource_monitor)
     obs_dim, act_dim = get_env_dims(env)
-    print(f"[OK] Env dims → obs={obs_dim}, actions={act_dim}")
+    print(f"[OK] Env dims -> obs={obs_dim}, actions={act_dim}")
 
     # ---- Load checkpoint -------------------------------------------------
     policy, config = load_maml_checkpoint(checkpoint_path, obs_dim, act_dim, device)
@@ -517,7 +521,7 @@ def generate_timed(
             f"RAM={res_end['ram_percent']:.0f}%  "
             f"GPU={res_end['gpu_mem_percent']:.0f}%"
         )
-        print(f"  Saved → {lpath}.*\n")
+        print(f"  Saved -> {lpath}.*\n")
 
     # ---- Cleanup ---------------------------------------------------------
     csv_writer.close()
@@ -527,10 +531,10 @@ def generate_timed(
     _print_summary(df)
     _write_latex(df, log_file.replace(".csv", "_table.tex"))
 
-    print(f"[OK] Timing CSV  → {log_file}")
-    print(f"[OK] Live log    → {log_dir}/{experiment_name}.csv")
-    print(f"[OK] LaTeX table → {log_file.replace('.csv', '_table.tex')}")
-    print(f"[OK] Levels      → {save_dir}/\n")
+    print(f"[OK] Timing CSV  -> {log_file}")
+    print(f"[OK] Live log    -> {log_dir}/{experiment_name}.csv")
+    print(f"[OK] LaTeX table -> {log_file.replace('.csv', '_table.tex')}")
+    print(f"[OK] Levels      -> {save_dir}/\n")
     return df
 
 
@@ -607,7 +611,7 @@ def _write_latex(df: pd.DataFrame, tex_path: str):
             rate = df["is_solvable"].sum() / len(df) * 100
             f.write(f"Solvability (\\%) & {rate:.1f} & -- \\\\\n")
         f.write("\\hline\n\\end{tabular}\n\\end{table}\n")
-    print(f"[OK] LaTeX table → {tex_path}")
+    print(f"[OK] LaTeX table -> {tex_path}")
 
 
 # ==========================================================================

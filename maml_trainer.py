@@ -39,6 +39,32 @@ from utils import ResourceMonitor, TrainingLogger, create_checkpoint_dir
 from wrappers.pcgrl_env import make_pcgrl_env
 
 import gym
+
+try:
+    from sokoban_utils import check_sokoban_deadlock, compute_dead_squares
+
+    _SOKOBAN_UTILS_AVAILABLE = True
+except ImportError:
+    _SOKOBAN_UTILS_AVAILABLE = False
+
+    def check_sokoban_deadlock(level, crate_pos, dead_squares=None):  # type: ignore[misc]
+        """Fallback: corner-only check when sokoban_utils is unavailable."""
+        y, x = crate_pos
+        h, w = level.shape
+        is_wall_up    = (y == 0 or level[y - 1, x] == 1)
+        is_wall_down  = (y == h - 1 or level[y + 1, x] == 1)
+        is_wall_left  = (x == 0 or level[y, x - 1] == 1)
+        is_wall_right = (x == w - 1 or level[y, x + 1] == 1)
+        return (
+            (is_wall_up and is_wall_left)
+            or (is_wall_up and is_wall_right)
+            or (is_wall_down and is_wall_left)
+            or (is_wall_down and is_wall_right)
+        )
+
+    def compute_dead_squares(level, target_positions):  # type: ignore[misc]
+        return set()
+
 from gym import spaces
 
 try:
@@ -77,6 +103,91 @@ class DictFlattenWrapper(gym.Wrapper):
     def step(self, action):
         obs, reward, done, info = self.env.step(action)
         return self._flatten(obs), reward, done, info
+
+
+class SokobanDeadlockGuardrail(gym.Wrapper):
+    """
+    Per-step deadlock penalty for Sokoban box placements.
+
+    Scans the live tile map on every env step and subtracts `deadlock_penalty`
+    for every crate that occupies a geometrically un-pushable position:
+      - Corner deadlock  : two orthogonal wall/boundary edges adjacent to the crate
+      - 3-wall pocket    : three or more adjacent walls (via check_sokoban_deadlock)
+
+    The penalty is intentionally dense (applied every step, not just at episode end)
+    so that gradients point *away* from bad geometry even when the A*/BFS solver
+    returns a path length of 0 (no gradient signal from the sparse solvability reward).
+
+    A crate sitting exactly on a target tile is never penalised — that is the
+    solved configuration.
+
+    NOTE: Inherits from gym.Wrapper (not gym.RewardWrapper) and overrides step()
+    directly with the old 4-tuple API to stay compatible with gym-pcgrl's env layer,
+    which pre-dates the Gymnasium 5-tuple (obs, reward, terminated, truncated, info).
+
+    Injection point: inside TaskDistribution.create_env()._make(), after
+    ResourceAwarePCGRLWrapper and before DictFlattenWrapper, for Sokoban tasks only.
+    """
+
+    def __init__(self, env, deadlock_penalty: float = 1.5):
+        """
+        Args:
+            env: Wrapped gym environment (after ResourceAwarePCGRLWrapper).
+            deadlock_penalty: Penalty magnitude subtracted per deadlocked crate
+                              per step.  Default 1.5 is intentionally larger than
+                              a typical tile-count dense reward step to create a
+                              clear gradient direction.
+        """
+        super().__init__(env)
+        self._deadlock_penalty = deadlock_penalty
+
+    def _get_grid(self) -> np.ndarray:
+        """Walk the wrapper chain to reach the innermost env and read its tile map."""
+        inner = self.env
+        while hasattr(inner, "env"):
+            inner = inner.env
+        # gym-pcgrl stores the current board in _rep._map
+        if hasattr(inner, "_rep") and hasattr(inner._rep, "_map"):
+            return np.array(inner._rep._map, dtype=int)
+        return None
+
+    def _deadlock_penalty_for_grid(self, grid) -> float:
+        """Compute total deadlock penalty for all crates in the current grid."""
+        if grid is None:
+            return 0.0
+
+        h, w = grid.shape
+        penalty = 0.0
+
+        # Precompute dead squares (reverse-BFS from all targets) for richer detection.
+        # Falls back to an empty set when no targets are placed yet.
+        target_positions = (
+            [(int(y), int(x)) for y, x in zip(*np.where(grid == 4))]
+            if np.any(grid == 4)
+            else []
+        )
+        dead_squares = (
+            compute_dead_squares(grid, target_positions)
+            if target_positions
+            else set()
+        )
+
+        for y in range(h):
+            for x in range(w):
+                # Tile 3 == crate not yet on a target.
+                # (gym-pcgrl may use tile 5 for crate-on-target; tile 3 is safe.)
+                if grid[y, x] == 3:
+                    if check_sokoban_deadlock(grid, (y, x), dead_squares):
+                        penalty -= self._deadlock_penalty
+
+        return penalty
+
+    def step(self, action):
+        """Old 4-tuple step, compatible with gym-pcgrl's pre-Gymnasium API."""
+        obs, reward, done, info = self.env.step(action)
+        grid = self._get_grid()
+        shaped_reward = reward + self._deadlock_penalty_for_grid(grid)
+        return obs, shaped_reward, done, info
 
 
 # ===========================================================================
@@ -181,6 +292,12 @@ class TaskDistribution:
                         )
                 except Exception:
                     pass  # Some envs may not support all params
+            # Strategy A guardrail: penalise deadlocked crate positions per-step so
+            # the inner-loop gradient has a dense signal pointing away from corner
+            # placements, breaking the count-matching local minimum.
+            if task["game"] == "sokoban":
+                env = SokobanDeadlockGuardrail(env, deadlock_penalty=1.5)
+
             # Flatten Dict observation space to a 1-D vector
             if isinstance(env.observation_space, gym.spaces.Dict):
                 env = DictFlattenWrapper(env)
