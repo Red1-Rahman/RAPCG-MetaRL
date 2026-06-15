@@ -1,3 +1,5 @@
+# Codebase tree of `.py` files:
+
 ```
 root
 ├── dashboard
