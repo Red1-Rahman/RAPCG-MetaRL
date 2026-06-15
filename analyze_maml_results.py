@@ -210,12 +210,18 @@ def fig_meta_loss_convergence(
     ax_main.annotate(
         f"Best: {best_loss:.4f}\n(iter {best_iter})",
         xy=(best_iter, best_loss),
-        xytext=(min(best_iter + len(iters) * 0.12, iters[-1] * 0.85),
-                smooth.max() * 0.55),
+        xytext=(
+            min(best_iter + len(iters) * 0.12, iters[-1] * 0.85),
+            smooth.max() * 0.55,
+        ),
         fontsize=7,
         color=C["threshold"],
-        arrowprops=dict(arrowstyle="->", color=C["threshold"], lw=0.8,
-                        connectionstyle="arc3,rad=0.2"),
+        arrowprops=dict(
+            arrowstyle="->",
+            color=C["threshold"],
+            lw=0.8,
+            connectionstyle="arc3,rad=0.2",
+        ),
     )
 
     ax_main.set_ylabel("Meta-Loss $\\mathcal{L}_{\\mathrm{meta}}$")
@@ -376,7 +382,7 @@ def fig_reward_distribution(df: pd.DataFrame, out_dir: Path):
         chunk = df["reward"].iloc[start:end].dropna().values
         quartiles.append(chunk)
         pct = int((start + end) / (2 * n) * 100)
-        #labels.append(f"Q{q + 1}\n({start}–{end})")
+        # labels.append(f"Q{q + 1}\n({start}–{end})")
         labels.append(f"Q{q + 1}\n[{start}–{end}]")
 
     # Violin
@@ -645,10 +651,11 @@ def fig_summary_dashboard(df: pd.DataFrame, out_dir: Path, run_name: str):
     row2_vals = [v for _, v in items[mid:]]
     # Pad shorter row to equal length
     while len(row2_keys) < len(row1_keys):
-        row2_keys.append(""); row2_vals.append("")
+        row2_keys.append("")
+        row2_vals.append("")
 
     col_labels = row1_keys
-    cell_vals  = [row1_vals, row2_keys, row2_vals]
+    cell_vals = [row1_vals, row2_keys, row2_vals]
 
     tbl = ax_stats.table(
         cellText=cell_vals,
@@ -667,10 +674,10 @@ def fig_summary_dashboard(df: pd.DataFrame, out_dir: Path, run_name: str):
         tbl[(0, j)].set_text_props(color="white", fontweight="bold")
     # Data rows
     for j in range(n_cols):
-        tbl[(1, j)].set_facecolor("#e8f0fe")   # row1 values
-        tbl[(2, j)].set_facecolor("#d0ddf7")   # row2 keys (act as sub-headers)
+        tbl[(1, j)].set_facecolor("#e8f0fe")  # row1 values
+        tbl[(2, j)].set_facecolor("#d0ddf7")  # row2 keys (act as sub-headers)
         tbl[(2, j)].set_text_props(fontweight="bold", color="#1a2a4a")
-        tbl[(3, j)].set_facecolor("#e8f0fe")   # row2 values
+        tbl[(3, j)].set_facecolor("#e8f0fe")  # row2 values
 
     ax_stats.set_title("Training Summary Statistics", fontsize=9, pad=6, loc="left")
 
@@ -717,7 +724,7 @@ def fig_phase_analysis(df: pd.DataFrame, out_dir: Path):
 
         phase_data = df["meta_loss"].iloc[start:end]
         mid_iter = iters[(start + min(end, n - 1)) // 2]
-        y_label = smooth.max() * (0.92 - 0.06 * ["Early","Mid","Late"].index(label))
+        y_label = smooth.max() * (0.92 - 0.06 * ["Early", "Mid", "Late"].index(label))
         ax.text(
             mid_iter,
             y_label,
@@ -727,8 +734,13 @@ def fig_phase_analysis(df: pd.DataFrame, out_dir: Path):
             fontsize=7.5,
             color=color,
             fontweight="bold",
-            bbox=dict(boxstyle="round,pad=0.2", facecolor="white",
-                      alpha=0.7, edgecolor=color, linewidth=0.6),
+            bbox=dict(
+                boxstyle="round,pad=0.2",
+                facecolor="white",
+                alpha=0.7,
+                edgecolor=color,
+                linewidth=0.6,
+            ),
         )
 
         patch_handles.append(
@@ -741,7 +753,7 @@ def fig_phase_analysis(df: pd.DataFrame, out_dir: Path):
 
     # Zoomed inset — last 20% of training
     zoom_start = int(0.8 * n)
-    #ax_ins = ax.inset_axes([0.55, 0.45, 0.42, 0.48])
+    # ax_ins = ax.inset_axes([0.55, 0.45, 0.42, 0.48])
     ax_ins = ax.inset_axes([0.52, 0.38, 0.44, 0.50])
     ax_ins.plot(
         iters[zoom_start:], smooth[zoom_start:], color=C["smooth"], linewidth=1.2
@@ -788,7 +800,7 @@ def compute_summary_stats(df: pd.DataFrame) -> dict:
     stats = {
         "Iterations": str(n),
         "Best Loss": f"{loss.min():.4f}",
-        #"Final Loss": f"{loss.iloc[-1]:.4f}",
+        # "Final Loss": f"{loss.iloc[-1]:.4f}",
         "Final Loss": f"{float(loss[-1]):.4f}",
         "Mean Loss": f"{loss.mean():.4f}",
         "Loss Std": f"{loss.std():.4f}",
