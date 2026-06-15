@@ -206,13 +206,16 @@ def fig_meta_loss_convergence(
     ax_main.axvline(
         best_iter, color=C["threshold"], linewidth=0.9, linestyle=":", alpha=0.8
     )
+    y_top = ax_main.get_ylim()[1] if ax_main.get_ylim()[1] != 1.0 else smooth.max()
     ax_main.annotate(
         f"Best: {best_loss:.4f}\n(iter {best_iter})",
         xy=(best_iter, best_loss),
-        xytext=(best_iter + len(iters) * 0.05, best_loss * 1.08),
+        xytext=(min(best_iter + len(iters) * 0.12, iters[-1] * 0.85),
+                smooth.max() * 0.55),
         fontsize=7,
         color=C["threshold"],
-        arrowprops=dict(arrowstyle="-", color=C["threshold"], lw=0.8),
+        arrowprops=dict(arrowstyle="->", color=C["threshold"], lw=0.8,
+                        connectionstyle="arc3,rad=0.2"),
     )
 
     ax_main.set_ylabel("Meta-Loss $\\mathcal{L}_{\\mathrm{meta}}$")
@@ -373,7 +376,8 @@ def fig_reward_distribution(df: pd.DataFrame, out_dir: Path):
         chunk = df["reward"].iloc[start:end].dropna().values
         quartiles.append(chunk)
         pct = int((start + end) / (2 * n) * 100)
-        labels.append(f"Q{q + 1}\n({start}–{end})")
+        #labels.append(f"Q{q + 1}\n({start}–{end})")
+        labels.append(f"Q{q + 1}\n[{start}–{end}]")
 
     # Violin
     parts = ax_violin.violinplot(
@@ -401,7 +405,8 @@ def fig_reward_distribution(df: pd.DataFrame, out_dir: Path):
         patch.set_alpha(0.7)
 
     ax_violin.set_xticks(range(1, 5))
-    ax_violin.set_xticklabels(labels, fontsize=7)
+    ax_violin.set_xticklabels(labels, fontsize=6.5, linespacing=1.3)
+    ax_violin.tick_params(axis="x", pad=4)
     ax_violin.set_ylabel("Reward Proxy ($-\\mathcal{L}_{\\mathrm{meta}}$)")
     ax_violin.set_xlabel("Training Quartile")
     ax_violin.set_title("Reward Distribution by Quartile", fontsize=9)
@@ -430,8 +435,8 @@ def fig_reward_distribution(df: pd.DataFrame, out_dir: Path):
     ax_trend.set_title("Cumulative Mean Reward Trend", fontsize=9)
     ax_trend.legend(framealpha=0.9, edgecolor="#30363d", fontsize=7)
 
-    fig.suptitle("Meta-Training Reward Proxy Analysis", fontsize=10, y=1.02)
-    fig.tight_layout()
+    fig.suptitle("Meta-Training Reward Proxy Analysis", fontsize=10, y=1.08)
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
     save_fig(fig, out_dir, "fig3_reward_distribution")
 
 
@@ -519,13 +524,13 @@ def fig_summary_dashboard(df: pd.DataFrame, out_dir: Path, run_name: str):
     Full double-column summary figure combining all key metrics.
     Designed as the primary figure for the paper's results section.
     """
-    fig = plt.figure(figsize=(COL_DOUBLE, COL_HEIGHT * 2.8))
+    fig = plt.figure(figsize=(COL_DOUBLE, COL_HEIGHT * 3.2))
     gs = gridspec.GridSpec(
         3,
         3,
         figure=fig,
-        hspace=0.45,
-        wspace=0.38,
+        hspace=0.55,
+        wspace=0.42,
     )
 
     ax_loss = fig.add_subplot(gs[0, :2])  # top-left wide: loss curve
@@ -629,11 +634,21 @@ def fig_summary_dashboard(df: pd.DataFrame, out_dir: Path, run_name: str):
             ax.set_title(ylabel, fontsize=9, pad=3)
             ax.axis("off")
 
-    # ── Stats table ───────────────────────────────────────────────────────────
+    # ── Stats table — split into two rows to avoid column crowding ────────────
     ax_stats.axis("off")
     stats = compute_summary_stats(df)
-    col_labels = list(stats.keys())
-    cell_vals = [[v for v in stats.values()]]
+    items = list(stats.items())
+    mid = len(items) // 2
+    row1_keys = [k for k, _ in items[:mid]]
+    row1_vals = [v for _, v in items[:mid]]
+    row2_keys = [k for k, _ in items[mid:]]
+    row2_vals = [v for _, v in items[mid:]]
+    # Pad shorter row to equal length
+    while len(row2_keys) < len(row1_keys):
+        row2_keys.append(""); row2_vals.append("")
+
+    col_labels = row1_keys
+    cell_vals  = [row1_vals, row2_keys, row2_vals]
 
     tbl = ax_stats.table(
         cellText=cell_vals,
@@ -642,24 +657,30 @@ def fig_summary_dashboard(df: pd.DataFrame, out_dir: Path, run_name: str):
         cellLoc="center",
     )
     tbl.auto_set_font_size(False)
-    tbl.set_fontsize(7.5)
-    tbl.scale(1, 1.6)
+    tbl.set_fontsize(7.0)
+    tbl.scale(1, 1.5)
 
-    # Style header row
-    for j in range(len(col_labels)):
+    n_cols = len(col_labels)
+    # Header row (row 0)
+    for j in range(n_cols):
         tbl[(0, j)].set_facecolor("#1f3a5f")
         tbl[(0, j)].set_text_props(color="white", fontweight="bold")
-        tbl[(1, j)].set_facecolor("#f0f4ff")
+    # Data rows
+    for j in range(n_cols):
+        tbl[(1, j)].set_facecolor("#e8f0fe")   # row1 values
+        tbl[(2, j)].set_facecolor("#d0ddf7")   # row2 keys (act as sub-headers)
+        tbl[(2, j)].set_text_props(fontweight="bold", color="#1a2a4a")
+        tbl[(3, j)].set_facecolor("#e8f0fe")   # row2 values
 
     ax_stats.set_title("Training Summary Statistics", fontsize=9, pad=6, loc="left")
 
     fig.suptitle(
         f"RAPCG-MetaRL: MAML Training Results — {run_name}",
-        fontsize=11,
+        fontsize=10,
         fontweight="bold",
-        y=1.01,
+        y=0.98,
     )
-
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
     save_fig(fig, out_dir, "fig5_training_summary_dashboard")
 
 
@@ -696,16 +717,18 @@ def fig_phase_analysis(df: pd.DataFrame, out_dir: Path):
 
         phase_data = df["meta_loss"].iloc[start:end]
         mid_iter = iters[(start + min(end, n - 1)) // 2]
-        mid_loss = smooth[(start + min(end, n - 1)) // 2]
+        y_label = smooth.max() * (0.92 - 0.06 * ["Early","Mid","Late"].index(label))
         ax.text(
             mid_iter,
-            ax.get_ylim()[1] if ax.get_ylim()[1] > 0 else smooth.max(),
+            y_label,
             label,
             ha="center",
-            va="bottom",
+            va="top",
             fontsize=7.5,
             color=color,
             fontweight="bold",
+            bbox=dict(boxstyle="round,pad=0.2", facecolor="white",
+                      alpha=0.7, edgecolor=color, linewidth=0.6),
         )
 
         patch_handles.append(
@@ -718,7 +741,8 @@ def fig_phase_analysis(df: pd.DataFrame, out_dir: Path):
 
     # Zoomed inset — last 20% of training
     zoom_start = int(0.8 * n)
-    ax_ins = ax.inset_axes([0.55, 0.45, 0.42, 0.48])
+    #ax_ins = ax.inset_axes([0.55, 0.45, 0.42, 0.48])
+    ax_ins = ax.inset_axes([0.52, 0.38, 0.44, 0.50])
     ax_ins.plot(
         iters[zoom_start:], smooth[zoom_start:], color=C["smooth"], linewidth=1.2
     )
@@ -746,7 +770,8 @@ def fig_phase_analysis(df: pd.DataFrame, out_dir: Path):
         fontsize=7,
         framealpha=0.9,
         edgecolor="#30363d",
-        loc="upper right",
+        loc="upper left",
+        bbox_to_anchor=(0.01, 0.99),
     )
 
     fig.tight_layout()
