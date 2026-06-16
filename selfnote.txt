@@ -31,3 +31,11 @@ python3.10 inference_timed.py checkpoints/sokoban_PPO_CUDA_20260220_140931/final
 python maml_trainer.py --games sokoban --representations narrow --iterations 50 --meta-batch 2 --inner-steps 3 --n-trajectories 64 --device cuda --experiment-name sokoban_MAML_inference
 
 python maml_inference_timed.py checkpoints/sokoban_MAML_inference/best_meta_model.pt --game sokoban --n-levels 40 --max-steps 10000 --device cuda
+
+python maml_trainer.py --games sokoban --representations narrow --iterations 400 --meta-batch 8 --inner-steps 5 --n-trajectories 128 --device cuda --experiment-name sokoban_MAML_production_run
+
+python maml_inference_timed.py checkpoints\sokoban_MAML_production_run\best_meta_model.pt --game sokoban --representation narrow --n-levels 20 --max-steps 500 --adapt-steps 5 --device cuda
+
+python rlhf_trainer.py --game sokoban --representation narrow --n-levels 50 --n-comparisons 50 --reward-epochs 100 --timesteps 50000 --rlhf-weight 0.5 --device cuda --synthetic --experiment-name sokoban_RLHF_cuda_v2
+
+python inference_timed.py checkpoints/sokoban_RLHF_cuda_v2/rlhf_model.zip --game sokoban --n-levels 20 --log-file inference_timing_rlhf.csv --device cuda
