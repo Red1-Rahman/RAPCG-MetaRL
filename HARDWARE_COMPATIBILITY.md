@@ -1,6 +1,6 @@
 # Hardware Compatibility & Optimization Guide
 
-## ✅ Your System Specifications
+## ✅ My System Specifications
 
 ### CPU
 
@@ -105,7 +105,7 @@ class RandomStateWrapper:
 
 ### Expected Performance with GPU Acceleration
 
-If you upgrade to CUDA-enabled PyTorch:
+If I upgrade to CUDA-enabled PyTorch:
 
 - **Expected FPS**: 12-20 steps/sec (3-5x faster)
 - **100k timesteps**: ~1.5-2 hours (vs 6 hours CPU)
@@ -117,7 +117,7 @@ If you upgrade to CUDA-enabled PyTorch:
 
 ### 1. Enable GPU Acceleration (Recommended)
 
-Your RTX 3060 Ti is detected but PyTorch is CPU-only. To enable GPU:
+My RTX 3060 Ti is detected but PyTorch is CPU-only. To enable GPU:
 
 ```powershell
 # Activate virtual environment
@@ -141,7 +141,7 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 
 **Current Configuration**: 1 environment (default)
 
-**Recommended for your system**:
+**Recommended for my system**:
 
 ```python
 # config_hardware.py already includes optimal settings
@@ -178,7 +178,7 @@ python train.py --game zelda --timesteps 100000 --n-envs 4 --buffer-size 25000 -
 
 ### 4. Storage Optimization
 
-**Your NVMe SSD is excellent for**:
+**The NVMe SSD is excellent for**:
 
 - Fast checkpoint saving (every 1000 steps)
 - Large replay buffers
@@ -236,17 +236,17 @@ python train.py --game zelda --timesteps 100000 --n-envs 4 --buffer-size 25000
 
 ---
 
-## 📝 System Requirements vs Your Hardware
+## 📝 System Requirements vs my Hardware
 
-| Requirement    | Minimum | Recommended | Your System | Status       |
-| -------------- | ------- | ----------- | ----------- | ------------ |
-| CPU Threads    | 4       | 8+          | 20          | ✅ Excellent |
-| RAM            | 8 GB    | 16+ GB      | 16 GB       | ✅ Good      |
-| GPU VRAM       | N/A     | 6+ GB       | 8 GB        | ✅ Excellent |
-| Storage (Free) | 10 GB   | 50+ GB      | 400 GB      | ✅ Excellent |
-| Python         | 3.8+    | 3.10        | 3.10.11     | ✅ Perfect   |
+| Requirement    | Minimum | Recommended | My System | Status       |
+| -------------- | ------- | ----------- | --------- | ------------ |
+| CPU Threads    | 4       | 8+          | 20        | ✅ Excellent |
+| RAM            | 8 GB    | 16+ GB      | 16 GB     | ✅ Good      |
+| GPU VRAM       | N/A     | 6+ GB       | 8 GB      | ✅ Excellent |
+| Storage (Free) | 10 GB   | 50+ GB      | 400 GB    | ✅ Excellent |
+| Python         | 3.8+    | 3.10        | 3.10.11   | ✅ Perfect   |
 
-**Overall Assessment**: ✅ **Your system exceeds recommended specifications**
+**Overall Assessment**: ✅ **The system exceeds recommended specifications**
 
 ---
 
@@ -300,7 +300,7 @@ python train.py
 
 ## ✅ Verification Checklist
 
-Run this to verify your system is ready:
+Run this to verify if the system is ready:
 
 ```bash
 # 1. Check hardware compatibility
@@ -358,7 +358,7 @@ Models saved automatically:
 
 ## 🎉 Success Summary
 
-**Your system is fully compatible and optimized for RAPCG-MetaRL!**
+**My system is fully compatible and optimized for RAPCG-MetaRL!**
 
 ✅ **Verified Working**:
 
