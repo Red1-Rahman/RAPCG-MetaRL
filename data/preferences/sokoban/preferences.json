@@ -1,0 +1,2852 @@
+[
+  {
+    "level_a": [
+      [
+        0,
+        1,
+        4,
+        1,
+        1
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        1
+      ],
+      [
+        2,
+        1,
+        1,
+        0,
+        1
+      ],
+      [
+        3,
+        0,
+        0,
+        1,
+        0
+      ]
+    ],
+    "level_b": [
+      [
+        1,
+        1,
+        0,
+        4,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        1,
+        0
+      ],
+      [
+        0,
+        3,
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        1
+      ]
+    ],
+    "preference": 0.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.327318"
+  },
+  {
+    "level_a": [
+      [
+        0,
+        4,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        3
+      ]
+    ],
+    "level_b": [
+      [
+        2,
+        1,
+        1,
+        0,
+        4
+      ],
+      [
+        3,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        0,
+        1,
+        0,
+        0
+      ]
+    ],
+    "preference": 0.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.327318"
+  },
+  {
+    "level_a": [
+      [
+        1,
+        0,
+        4,
+        0,
+        0
+      ],
+      [
+        1,
+        2,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        3
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    ],
+    "level_b": [
+      [
+        2,
+        3,
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        4
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        1,
+        1
+      ]
+    ],
+    "preference": 1.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.328332"
+  },
+  {
+    "level_a": [
+      [
+        0,
+        4,
+        1,
+        1,
+        1
+      ],
+      [
+        1,
+        0,
+        1,
+        0,
+        2
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        3
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        4,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        2,
+        0
+      ],
+      [
+        3,
+        0,
+        0,
+        1,
+        0
+      ]
+    ],
+    "preference": 1.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.328332"
+  },
+  {
+    "level_a": [
+      [
+        2,
+        1,
+        1,
+        0,
+        4
+      ],
+      [
+        3,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        0,
+        1,
+        0,
+        0
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        1,
+        4,
+        3
+      ]
+    ],
+    "preference": 0.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.328332"
+  },
+  {
+    "level_a": [
+      [
+        0,
+        1,
+        4,
+        1,
+        1
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        1
+      ],
+      [
+        2,
+        1,
+        1,
+        0,
+        1
+      ],
+      [
+        3,
+        0,
+        0,
+        1,
+        0
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        1,
+        4,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        2
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        3
+      ]
+    ],
+    "preference": 1.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.328332"
+  },
+  {
+    "level_a": [
+      [
+        1,
+        1,
+        1,
+        1,
+        2
+      ],
+      [
+        1,
+        4,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        3
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    ],
+    "level_b": [
+      [
+        1,
+        3,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        4,
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        0
+      ]
+    ],
+    "preference": 1.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.329324"
+  },
+  {
+    "level_a": [
+      [
+        1,
+        0,
+        4,
+        0,
+        0
+      ],
+      [
+        1,
+        2,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        3
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        4,
+        1,
+        1,
+        1
+      ],
+      [
+        1,
+        0,
+        1,
+        0,
+        2
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        3
+      ]
+    ],
+    "preference": 1.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.329324"
+  },
+  {
+    "level_a": [
+      [
+        1,
+        0,
+        4,
+        0,
+        0
+      ],
+      [
+        1,
+        2,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        3
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    ],
+    "level_b": [
+      [
+        2,
+        0,
+        1,
+        4,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        1,
+        1,
+        3
+      ]
+    ],
+    "preference": 0.5,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.329324"
+  },
+  {
+    "level_a": [
+      [
+        0,
+        4,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        2,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        3
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        2,
+        1,
+        1,
+        4
+      ],
+      [
+        0,
+        0,
+        3,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        1
+      ]
+    ],
+    "preference": 0.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.329324"
+  },
+  {
+    "level_a": [
+      [
+        1,
+        3,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        4,
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        0
+      ]
+    ],
+    "level_b": [
+      [
+        1,
+        0,
+        1,
+        4,
+        0
+      ],
+      [
+        1,
+        1,
+        1,
+        2,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        3
+      ]
+    ],
+    "preference": 0.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.329324"
+  },
+  {
+    "level_a": [
+      [
+        0,
+        1,
+        4,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        2
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        3
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        2,
+        1,
+        1,
+        4,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        3
+      ]
+    ],
+    "preference": 0.5,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.330326"
+  },
+  {
+    "level_a": [
+      [
+        1,
+        0,
+        4,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        2
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        3,
+        0,
+        1,
+        0,
+        0
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        4,
+        1,
+        1,
+        1
+      ],
+      [
+        1,
+        0,
+        1,
+        0,
+        2
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        3
+      ]
+    ],
+    "preference": 0.5,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.330326"
+  },
+  {
+    "level_a": [
+      [
+        1,
+        0,
+        4,
+        0,
+        0
+      ],
+      [
+        1,
+        2,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        3
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        1,
+        4,
+        0,
+        1
+      ],
+      [
+        0,
+        2,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        3
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    ],
+    "preference": 1.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.330326"
+  },
+  {
+    "level_a": [
+      [
+        1,
+        0,
+        4,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        2
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        3,
+        0,
+        1,
+        0,
+        0
+      ]
+    ],
+    "level_b": [
+      [
+        2,
+        1,
+        3,
+        4,
+        0
+      ],
+      [
+        1,
+        0,
+        1,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    ],
+    "preference": 0.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.330326"
+  },
+  {
+    "level_a": [
+      [
+        1,
+        0,
+        1,
+        4,
+        0
+      ],
+      [
+        1,
+        1,
+        1,
+        2,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        3
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        1,
+        4,
+        3
+      ]
+    ],
+    "preference": 0.5,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.330326"
+  },
+  {
+    "level_a": [
+      [
+        1,
+        3,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        4,
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        0
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        4,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        3
+      ]
+    ],
+    "preference": 0.5,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.331325"
+  },
+  {
+    "level_a": [
+      [
+        0,
+        4,
+        0,
+        2,
+        0
+      ],
+      [
+        1,
+        0,
+        3,
+        1,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        1,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        4,
+        1,
+        1,
+        3
+      ],
+      [
+        1,
+        1,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        1
+      ]
+    ],
+    "preference": 0.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.331325"
+  },
+  {
+    "level_a": [
+      [
+        0,
+        1,
+        4,
+        0,
+        1
+      ],
+      [
+        0,
+        2,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        3
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        4,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        3
+      ]
+    ],
+    "preference": 1.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.331325"
+  },
+  {
+    "level_a": [
+      [
+        0,
+        2,
+        1,
+        1,
+        4
+      ],
+      [
+        0,
+        0,
+        3,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        1
+      ]
+    ],
+    "level_b": [
+      [
+        2,
+        1,
+        3,
+        4,
+        0
+      ],
+      [
+        1,
+        0,
+        1,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    ],
+    "preference": 0.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.331325"
+  },
+  {
+    "level_a": [
+      [
+        0,
+        4,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        3
+      ]
+    ],
+    "level_b": [
+      [
+        1,
+        0,
+        1,
+        4,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        2,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        1,
+        0,
+        1,
+        3
+      ]
+    ],
+    "preference": 0.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.331325"
+  },
+  {
+    "level_a": [
+      [
+        0,
+        4,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        2,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        3
+      ]
+    ],
+    "level_b": [
+      [
+        2,
+        0,
+        1,
+        4,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        1,
+        1,
+        3
+      ]
+    ],
+    "preference": 1.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.332324"
+  },
+  {
+    "level_a": [
+      [
+        1,
+        0,
+        4,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        2
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        3,
+        0,
+        1,
+        0,
+        0
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        4,
+        1,
+        1,
+        3
+      ],
+      [
+        1,
+        1,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        1
+      ]
+    ],
+    "preference": 0.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.332324"
+  },
+  {
+    "level_a": [
+      [
+        2,
+        1,
+        1,
+        0,
+        4
+      ],
+      [
+        3,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        0,
+        1,
+        0,
+        0
+      ]
+    ],
+    "level_b": [
+      [
+        1,
+        0,
+        4,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        2
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        3,
+        0,
+        1,
+        0,
+        0
+      ]
+    ],
+    "preference": 0.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.332324"
+  },
+  {
+    "level_a": [
+      [
+        0,
+        4,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        3
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        4,
+        0,
+        2,
+        0
+      ],
+      [
+        1,
+        0,
+        3,
+        1,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        1,
+        1
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    ],
+    "preference": 0.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.332324"
+  },
+  {
+    "level_a": [
+      [
+        2,
+        3,
+        4,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        4,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        2,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        3
+      ]
+    ],
+    "preference": 0.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.332324"
+  },
+  {
+    "level_a": [
+      [
+        1,
+        1,
+        0,
+        4,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        1,
+        0
+      ],
+      [
+        0,
+        3,
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        1
+      ]
+    ],
+    "level_b": [
+      [
+        2,
+        3,
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        4
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        0,
+        1,
+        1
+      ]
+    ],
+    "preference": 0.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.333324"
+  },
+  {
+    "level_a": [
+      [
+        1,
+        0,
+        1,
+        1,
+        1
+      ],
+      [
+        0,
+        1,
+        3,
+        2,
+        1
+      ],
+      [
+        4,
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        1,
+        1,
+        0,
+        1
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        1,
+        4,
+        1,
+        1
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        1
+      ],
+      [
+        2,
+        1,
+        1,
+        0,
+        1
+      ],
+      [
+        3,
+        0,
+        0,
+        1,
+        0
+      ]
+    ],
+    "preference": 0.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.333324"
+  },
+  {
+    "level_a": [
+      [
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        4,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        2,
+        0
+      ],
+      [
+        3,
+        0,
+        0,
+        1,
+        0
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        4,
+        1,
+        1,
+        3
+      ],
+      [
+        1,
+        1,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        1,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        1
+      ]
+    ],
+    "preference": 0.0,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.333324"
+  },
+  {
+    "level_a": [
+      [
+        0,
+        1,
+        4,
+        0,
+        1
+      ],
+      [
+        0,
+        2,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        3
+      ],
+      [
+        1,
+        1,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    ],
+    "level_b": [
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        2,
+        1,
+        1,
+        4,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        0,
+        3
+      ]
+    ],
+    "preference": 0.5,
+    "metrics_a": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metrics_b": {
+      "diversity": 0.2,
+      "complexity": 1.0,
+      "size": 25,
+      "unique_tiles": 5
+    },
+    "metadata": {
+      "game": "sokoban",
+      "type": "synthetic",
+      "fixed": true
+    },
+    "timestamp": "2026-03-06T14:28:50.333324"
+  }
+]
