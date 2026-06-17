@@ -1,7 +1,7 @@
 import os
 import time
 import argparse
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Tuple, cast
 import numpy as np
 import pandas as pd
 import gym
@@ -37,7 +37,6 @@ class RLHFFlattenWrapper(ObservationWrapper):
         else:
             obs_raw, info = result, {}
             
-        # Return the processed observation and elements as a strict standard 5-tuple
         return self.observation(obs_raw), info
 
     def step(self, action: Any) -> Tuple[np.ndarray, float, bool, bool, Dict[str, Any]]:
@@ -56,10 +55,10 @@ class RLHFFlattenWrapper(ObservationWrapper):
         return self.observation(obs_raw), float(reward), bool(terminated), bool(truncated), info
 
     def observation(self, observation: Any) -> np.ndarray:
-        # Avoid Pylance inferring "Never" by explicitly handling dict instances safely
         if isinstance(observation, dict):
-            # Extract and flatten all items present inside the dict
-            arrays = [np.array(v).flatten() for v in observation.values()]
+            # Fix: Cast observation to a specific dictionary type to avoid 'Never' iterability error
+            obs_dict = cast(Dict[str, Any], observation)
+            arrays = [np.array(v).flatten() for v in obs_dict.values()]
             flat_obs = np.concatenate(arrays)
             return flat_obs.astype(np.float32)
         
@@ -73,6 +72,7 @@ class RLHFLevelGenerator:
     def __init__(self, model_path: str, game: str, device: str = "auto"):
         self.game = game
         self.device = device
+        self.model_path = model_path
         
         print(f"Loading RLHF model from {model_path} on {device}...")
         self.model = PPO.load(model_path, device=device)
@@ -92,17 +92,39 @@ class RLHFLevelGenerator:
         
         print("[OK] Setup complete")
 
+    def _get_output_dir(self) -> str:
+        """Determines the target folder path dynamically from the model filename."""
+        base_folder = os.path.basename(os.path.dirname(self.model_path))
+        if not base_folder or base_folder == "checkpoints":
+            base_folder = os.path.splitext(os.path.basename(self.model_path))[0]
+        
+        return os.path.join("generated_levels", base_folder)
+
     def generate_with_timing(self, n_levels: int, deterministic: bool = True) -> pd.DataFrame:
         print("======================================================================")
         print(f"GENERATING {n_levels} LEVELS WITH TIMING")
         
+        output_dir = self._get_output_dir()
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+            print(f"Created output directory: {output_dir}")
+        else:
+            print(f"Using existing output directory: {output_dir}")
+        
         timing_data = []
         
         for i in range(n_levels):
-            print(f"Level {i + 1}/{n_levels}:")
-            start_time = time.time()
+            level_id = i + 1
+            print(f"Level {level_id}/{n_levels}:")
             
-            # Unpack according to our newly validated static signature
+            npy_path = os.path.join(output_dir, f"level_{level_id}.npy")
+            txt_path = os.path.join(output_dir, f"level_{level_id}.txt")
+            
+            if os.path.exists(npy_path) or os.path.exists(txt_path):
+                print(f"  -> Skipping generation: level files already exist.")
+                continue
+                
+            start_time = time.time()
             obs, info = self.env.reset()
                 
             done = False
@@ -110,9 +132,7 @@ class RLHFLevelGenerator:
             reward: float = 0.0
             
             while not done:
-                # Type safe assertion: obs is cleanly a 1D np.ndarray tracking shape (52,)
                 action, _ = self.model.predict(obs, deterministic=deterministic)
-                
                 obs, step_reward, terminated, truncated, info = self.env.step(action)
                 done = terminated or truncated
                 reward += step_reward
@@ -121,8 +141,17 @@ class RLHFLevelGenerator:
             end_time = time.time()
             elapsed_time = end_time - start_time
             
+            try:
+                # Fix: Cast unwrapped environment to Any to bypass base gym.Env attribute limits
+                unwrapped_env = cast(Any, self.env.unwrapped)
+                final_map = unwrapped_env._rep._map.copy()
+                np.save(npy_path, final_map)
+                np.savetxt(txt_path, final_map, fmt='%d')
+            except Exception as e:
+                print(f"  Warning: Could not save layout artifacts: {e}")
+            
             timing_data.append({
-                "level_id": i + 1,
+                "level_id": level_id,
                 "time_seconds": elapsed_time,
                 "steps_taken": steps,
                 "reward": reward
@@ -146,9 +175,13 @@ def main():
     generator = RLHFLevelGenerator(args.model_path, args.game, args.device)
     df = generator.generate_with_timing(n_levels=args.n_levels)
     
-    df.to_csv(args.log_file, index=False)
-    print("======================================================================")
-    print(f"[OK] Timed inference complete. Results saved to {args.log_file}")
+    if not df.empty:
+        df.to_csv(args.log_file, index=False)
+        print("======================================================================")
+        print(f"[OK] Timed inference complete. Metrics saved to {args.log_file}")
+    else:
+        print("======================================================================")
+        print("[INFO] No new levels were generated. Log file unchanged.")
 
 
 if __name__ == "__main__":
