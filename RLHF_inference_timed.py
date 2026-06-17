@@ -1,49 +1,46 @@
 import os
 import time
 import argparse
+from typing import Any, Tuple
 import numpy as np
 import pandas as pd
 import gym
-import gym_pcgrl  # Registers the pcgrl environments
+from gym.core import ObservationWrapper
 from gym.spaces import Box
+import gym_pcgrl  # Registers the pcgrl environments
 from stable_baselines3 import PPO
 
-# Import your existing solvability wrapper 
-# (Adjust this import if your wrapper is located in a different file, like wrappers.py)
-try:
-    from sokoban_utils import SokobanSolvabilityWrapper
-except ImportError:
-    # Fallback/Dummy if the exact import path is different in your repo
-    print("[WARNING] Could not import SokobanSolvabilityWrapper. Check your import path.")
-    class SokobanSolvabilityWrapper(gym.Wrapper):
-        def __init__(self, env, penalty=25.0):
-            super().__init__(env)
+# Fix: Direct import removes the re-assignment type conflict.
+from sokoban_utils import SokobanSolvabilityWrapper
 
-class RLHFFlattenWrapper(gym.ObservationWrapper):
+
+class RLHFFlattenWrapper(ObservationWrapper):
     """
     Flattens dictionary observations into a 1D array to match
     the Box(52,) space expected by the RLHF model.
     """
-    def __init__(self, env):
+    def __init__(self, env: gym.Env):
         super().__init__(env)
         # The RLHF model expects a flattened 52-dimensional Box
         self.observation_space = Box(low=0.0, high=5.0, shape=(52,), dtype=np.float32)
 
-    def observation(self, obs):
+    # Fix: Renamed parameter 'obs' to 'observation' to perfectly match the base class
+    def observation(self, observation: Any) -> np.ndarray:
         # If it's a dictionary (like OrderedDict from PCGRL)
-        if isinstance(obs, dict):
+        if isinstance(observation, dict):
             # Flatten all values in the dict and concatenate them into a single 1D array
-            flat_obs = np.concatenate([np.array(v).flatten() for v in obs.values()])
+            flat_obs = np.concatenate([np.array(v).flatten() for v in observation.values()])
             return flat_obs.astype(np.float32)
         
         # Fallback if it's already an array
-        if isinstance(obs, np.ndarray):
-            return obs.flatten().astype(np.float32)
+        if isinstance(observation, np.ndarray):
+            return observation.flatten().astype(np.float32)
             
-        return obs
+        return np.array(observation, dtype=np.float32)
+
 
 class RLHFLevelGenerator:
-    def __init__(self, model_path, game, device="auto"):
+    def __init__(self, model_path: str, game: str, device: str = "auto"):
         self.game = game
         self.device = device
         
@@ -52,9 +49,9 @@ class RLHFLevelGenerator:
         
         # Initialize the base environment
         env_name = f"{game}-narrow-v0"
-        self.env = gym.make(env_name)
+        self.env: gym.Env = gym.make(env_name)
         
-        # 1. Apply Solvability Configuration (as seen in your logs)
+        # 1. Apply Solvability Configuration (as seen in logs)
         if game.lower() == "sokoban":
             print("Applying solvability-optimized configuration for SOKOBAN")
             self.env = SokobanSolvabilityWrapper(self.env, penalty=25.0)
@@ -64,7 +61,7 @@ class RLHFLevelGenerator:
         
         print("[OK] Setup complete")
 
-    def generate_with_timing(self, n_levels, deterministic=True):
+    def generate_with_timing(self, n_levels: int, deterministic: bool = True) -> pd.DataFrame:
         print("======================================================================")
         print(f"GENERATING {n_levels} LEVELS WITH TIMING")
         
@@ -75,21 +72,26 @@ class RLHFLevelGenerator:
             
             start_time = time.time()
             
-            obs = self.env.reset()
+            obs_raw = self.env.reset()
             # Handle Gym API differences (tuple vs single observation)
-            if isinstance(obs, tuple):
-                obs = obs[0]
+            if isinstance(obs_raw, tuple):
+                obs = obs_raw[0]
+            else:
+                obs = obs_raw
                 
             done = False
             steps = 0
+            # Fix: Ensure reward is bound even if the loop somehow doesn't run
+            reward: float = 0.0
             
             while not done:
                 # The obs is now guaranteed to be a flattened 52-dim array by the wrapper
                 action, _ = self.model.predict(obs, deterministic=deterministic)
                 
-                step_result = self.env.step(action)
+                # Fix: explicitly type step_result as a Tuple so len() is statically valid
+                step_result: Tuple[Any, ...] = self.env.step(action)
                 
-                # Handle old vs new Gym step returns
+                # Handle old vs new Gym step returns safely
                 if len(step_result) == 4:
                     obs, reward, done, info = step_result
                 else:
@@ -101,9 +103,9 @@ class RLHFLevelGenerator:
             end_time = time.time()
             elapsed_time = end_time - start_time
             
-            # Extract final map (assuming it's stored in the environment)
-            # Adjust according to how gym-pcgrl stores the final grid in your version
-            final_map = self.env.unwrapped._rep._map if hasattr(self.env.unwrapped, '_rep') else None
+            # Fix: Cast unwrapped environment to Any to bypass strict attribute checking safely
+            unwrapped_env: Any = self.env.unwrapped
+            final_map = unwrapped_env._rep._map if hasattr(unwrapped_env, '_rep') else None
             
             timing_data.append({
                 "level_id": i + 1,
@@ -115,6 +117,7 @@ class RLHFLevelGenerator:
             print(f"  -> Finished in {elapsed_time:.3f}s ({steps} steps)")
             
         return pd.DataFrame(timing_data)
+
 
 def main():
     parser = argparse.ArgumentParser(description="Timed Inference for RLHF Models")
