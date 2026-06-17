@@ -8,7 +8,7 @@ RAPCG-MetaRL is a research framework for training procedural content generation 
 
 The current implementation focuses on Zelda and Sokoban PCGRL tasks, with Binary support exposed through the same environment factory. Stable-Baselines3 provides PPO and A2C training, PyTorch supports MAML and RLHF extensions, and `gym-pcgrl` supplies the underlying problem definitions, representations, search engines, and reward statistics. Training produces Stable-Baselines3 checkpoint archives, step-level CSV logs, and generated levels in NumPy, text, and image form. A Streamlit dashboard and cross-platform command scripts provide repeatable access to training, inference, analysis, and visualization. Because Sokoban is PSPACE-complete, the framework does not enforce exact solvability during training. Instead it optimizes for structural solvability indicators, balanced crate-target counts, deadlock-free layouts, player reachability, and crate pushability, that are computationally tractable per step and strongly predictive of solvability at evaluation time. RLHF extends this by allowing human preference signals to bias generation toward structurally valid layouts without requiring explicit solvability constraints to be hand-coded.
 
-The strongest completed comparison in the repository is PPO versus A2C on Zelda and Sokoban. PPO shows higher mean episode reward than A2C in the logged comparison table, with Zelda PPO improving from -8.54 early reward to +11.84 late reward and Sokoban PPO improving from +2.84 to +6.66. CUDA PPO runs reported average CPU use below 4 percent and average RAM use below 50 percent for the Zelda and Sokoban runs documented in `table.md`. MAML and RLHF code paths exist. A completed MAML training run on Sokoban narrow (500 iterations, meta-batch 2, inner steps 3) produced a best meta-loss of 8.1543 at iteration 31, with average CPU at 5.2%, average RAM at 57.8%, and average GPU at 14.8%. Full MAML training metrics are documented in the MAML Training Results section. RLHF training results are not yet fully represented in the main comparison table.
+The strongest completed comparison in the repository is PPO versus A2C on Zelda and Sokoban. PPO shows higher mean episode reward than A2C in the logged comparison table, with Zelda PPO improving from -8.54 early reward to +11.84 late reward and Sokoban PPO improving from +2.84 to +6.66. CUDA PPO runs reported average CPU use below 4 percent and average RAM use below 50 percent for the Zelda and Sokoban runs documented in `table.md`. MAML and RLHF pipelines are fully implemented and have completed training runs. A completed MAML training run on Sokoban narrow (500 iterations, meta-batch 2, inner steps 3) produced a best meta-loss of 8.1543 at iteration 31, with average CPU at 5.2%, average RAM at 57.8%, and average GPU at 14.8%. A completed RLHF run on Sokoban narrow (50 preferences, 100 reward-model epochs, 50,000 PPO fine-tuning timesteps) produced a mean inference reward of 1.70 across 20 generated levels at a mean generation time of 5.31 ms excluding warm-up.
 
 ## The Systemic Problem
 
@@ -175,19 +175,34 @@ The repository also contains a prior MAML timed inference CSV. The file `inferen
 | Mean diversity          |                       0.1947 |
 | Mean complexity         |                       0.9988 |
 
-### RLHF Artifact Status
+### RLHF Results
 
-The repository contains a Sokoban preference file with 30 preferences and a reward model checkpoint at `checkpoints/sokoban_RLHF_cuda/reward_model.pt`. The RLHF log reports 30 generated levels, 30 synthetic pairwise preferences, 100 reward-model epochs, and final validation accuracy of 66.7 percent. PPO fine-tuning was configured for 50,000 timesteps, but the available log reaches 5,248 timesteps and no final `rlhf_model.zip` is present in the checkpoint directory.
+A completed RLHF training run was conducted on Sokoban with the narrow representation under experiment name `sokoban_RLHF_cuda_v2`. The pipeline ran all four phases: level generation, synthetic pairwise preference collection, reward model training, and PPO fine-tuning. The final policy checkpoint is saved at `checkpoints/sokoban_RLHF_cuda_v2/rlhf_model.zip`.
 
-| Metric                                           |     RLHF Sokoban |
-| ------------------------------------------------ | ---------------: |
-| Preference source                                |        Synthetic |
-| Preference count                                 |               30 |
-| Reward model epochs                              |              100 |
-| Reward model final validation accuracy           |            66.7% |
-| Fine-tuning timesteps completed in available log |            5,248 |
-| Final RLHF PPO checkpoint                        | TBD, not present |
-| Comparable inference result                      | TBD, not present |
+| Metric                           |        RLHF Sokoban (v2) |
+| -------------------------------- | -----------------------: |
+| Preference source                |                Synthetic |
+| Levels generated for preferences |                       50 |
+| Preference count                 |                       50 |
+| Reward model epochs              |                      100 |
+| RLHF reward weight (w)           |                      0.5 |
+| Fine-tuning timesteps            |                   50,000 |
+| Device                           | NVIDIA RTX 3060 Ti, CUDA |
+| Final RLHF PPO checkpoint        |    rlhf_model.zip, saved |
+
+Timed inference was conducted against the final RLHF policy using `RLHF_inference_timed.py` over 20 Sokoban levels. Level 1 recorded an atypically high generation time of 110.00 ms consistent with CUDA warm-up latency; the remaining 19 levels averaged 5.31 ms. Both inclusive and warm-up-excluded figures are reported below.
+
+| Metric                                  | RLHF Sokoban Timed Inference (20 levels) |
+| --------------------------------------- | ---------------------------------------: |
+| Levels                                  |                                       20 |
+| Mean total time                         |                                 10.55 ms |
+| Mean total time (excl. warm-up)         |                                  5.31 ms |
+| Mean inference per step                 |                                 1.600 ms |
+| Mean inference per step (excl. warm-up) |                                 0.857 ms |
+| Mean steps per level                    |                                     6.30 |
+| Mean total reward                       |                                     1.70 |
+| Reward range                            |                          -11.00 to 20.00 |
+| Reward std                              |                                     6.93 |
 
 ## Operational Topology and Strategic Outlook
 
@@ -202,10 +217,10 @@ The Streamlit dashboard exposes training, inference, level visualization, logs, 
 The next technical steps are clear from the code state:
 
 1. Wire the tracked environment complexity value into actual PCGRL problem or representation parameters.
-2. Complete comparable MAML training tables for Zelda, Sokoban, and Binary rather than relying only on timed inference artifacts.
-3. Complete RLHF fine-tuning through the configured timestep budget, save the final PPO checkpoint, and run timed inference against the RLHF policy.
-4. Replace or remove the broken archival `sokoban_utils_backup.py`, which is not parseable Python.
-5. Plan a Gymnasium migration path, since logs show the current stack uses older Gym APIs through compatibility wrappers.
+2. Complete comparable MAML training tables for Zelda and Binary in addition to the completed Sokoban run.
+3. Replace or remove the broken archival `sokoban_utils_backup.py`, which is not parseable Python.
+4. Plan a Gymnasium migration path, since logs show the current stack uses older Gym APIs through compatibility wrappers.
+5. Add structural solvability pass-rate columns to inference result tables to enable direct comparison of PPO, MAML, and RLHF on solvability proxy metrics.
 
 ## Evidence Scope
 
