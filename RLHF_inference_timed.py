@@ -65,46 +65,49 @@ class RLHFLevelGenerator:
 
         print("[OK] Setup complete")
 
-    def generate_with_timing(
-        self, n_levels: int, deterministic: bool = True
-    ) -> pd.DataFrame:
+    def generate_with_timing(self, n_levels: int, deterministic: bool = True) -> pd.DataFrame:
         print("======================================================================")
         print(f"GENERATING {n_levels} LEVELS WITH TIMING")
-
+        
         timing_data = []
-
+        
         for i in range(n_levels):
             print(f"Level {i + 1}/{n_levels}:")
-
+            
             start_time = time.time()
-
-            obs_raw = self.env.reset()
-            # Handle Gym API differences (tuple vs single observation)
-            if isinstance(obs_raw, tuple):
-                obs = obs_raw[0]
+            
+            # --- FIX: Robustly handle gym.reset() ---
+            reset_result = self.env.reset()
+            
+            # If it's a tuple, it's (obs, info)
+            if isinstance(reset_result, tuple) and len(reset_result) == 2:
+                obs = reset_result[0]
+            # If it's just the observation (likely an OrderedDict)
             else:
-                obs = obs_raw
-
+                obs = reset_result
+            # ----------------------------------------
+                
             done = False
             steps = 0
             reward: float = 0.0
-
+            
             while not done:
-                # The obs is now guaranteed to be a flattened 52-dim array by the wrapper
+                # The obs is now guaranteed to be the observation, 
+                # and RLHFFlattenWrapper will handle the flattening.
                 action, _ = self.model.predict(obs, deterministic=deterministic)
-
+                
                 # Explicitly type step_result as a Tuple so len() is statically valid
                 step_result: Tuple[Any, ...] = self.env.step(action)
-
-                # Handle old vs new Gym step returns safely
+                
+                # Handle old (obs, reward, done, info) vs new (obs, reward, terminated, truncated, info)
                 if len(step_result) == 4:
                     obs, reward, done, info = step_result
                 else:
                     obs, reward, terminated, truncated, info = step_result
                     done = terminated or truncated
-
+                    
                 steps += 1
-
+                
             end_time = time.time()
             elapsed_time = end_time - start_time
 
