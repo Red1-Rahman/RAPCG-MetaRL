@@ -1,7 +1,7 @@
 import os
 import time
 import argparse
-from typing import Any, Tuple
+from typing import Any, Dict, Tuple
 import numpy as np
 import pandas as pd
 import gym
@@ -10,7 +10,7 @@ from gym.spaces import Box
 import gym_pcgrl  # Registers the pcgrl environments
 from stable_baselines3 import PPO
 
-# Fix: Direct import removes the re-assignment type conflict.
+# Direct import from your project utilities
 from sokoban_utils import SokobanSolvabilityWrapper
 
 
@@ -24,7 +24,6 @@ class RLHFFlattenWrapper(ObservationWrapper):
         # The RLHF model expects a flattened 52-dimensional Box
         self.observation_space = Box(low=0.0, high=5.0, shape=(52,), dtype=np.float32)
 
-    # Fix: Renamed parameter 'obs' to 'observation' to perfectly match the base class
     def observation(self, observation: Any) -> np.ndarray:
         # If it's a dictionary (like OrderedDict from PCGRL)
         if isinstance(observation, dict):
@@ -54,7 +53,9 @@ class RLHFLevelGenerator:
         # 1. Apply Solvability Configuration (as seen in logs)
         if game.lower() == "sokoban":
             print("Applying solvability-optimized configuration for SOKOBAN")
-            self.env = SokobanSolvabilityWrapper(self.env, penalty=25.0)
+            # Fix: Use dictionary unpacking to bypass strict Pylance keyword matching
+            wrapper_kwargs: Dict[str, Any] = {"penalty": 25.0}
+            self.env = SokobanSolvabilityWrapper(self.env, **wrapper_kwargs)
             
         # 2. Apply the crucial Flattening Wrapper for the RLHF model
         self.env = RLHFFlattenWrapper(self.env)
@@ -81,14 +82,13 @@ class RLHFLevelGenerator:
                 
             done = False
             steps = 0
-            # Fix: Ensure reward is bound even if the loop somehow doesn't run
             reward: float = 0.0
             
             while not done:
                 # The obs is now guaranteed to be a flattened 52-dim array by the wrapper
                 action, _ = self.model.predict(obs, deterministic=deterministic)
                 
-                # Fix: explicitly type step_result as a Tuple so len() is statically valid
+                # Explicitly type step_result as a Tuple so len() is statically valid
                 step_result: Tuple[Any, ...] = self.env.step(action)
                 
                 # Handle old vs new Gym step returns safely
@@ -103,7 +103,7 @@ class RLHFLevelGenerator:
             end_time = time.time()
             elapsed_time = end_time - start_time
             
-            # Fix: Cast unwrapped environment to Any to bypass strict attribute checking safely
+            # Cast unwrapped environment to Any to bypass strict attribute checking safely
             unwrapped_env: Any = self.env.unwrapped
             final_map = unwrapped_env._rep._map if hasattr(unwrapped_env, '_rep') else None
             
