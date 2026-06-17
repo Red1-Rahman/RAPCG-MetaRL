@@ -51,10 +51,10 @@ except ImportError:
         """Fallback: corner-only check when sokoban_utils is unavailable."""
         y, x = crate_pos
         h, w = level.shape
-        is_wall_up    = (y == 0 or level[y - 1, x] == 1)
-        is_wall_down  = (y == h - 1 or level[y + 1, x] == 1)
-        is_wall_left  = (x == 0 or level[y, x - 1] == 1)
-        is_wall_right = (x == w - 1 or level[y, x + 1] == 1)
+        is_wall_up = y == 0 or level[y - 1, x] == 1
+        is_wall_down = y == h - 1 or level[y + 1, x] == 1
+        is_wall_left = x == 0 or level[y, x - 1] == 1
+        is_wall_right = x == w - 1 or level[y, x + 1] == 1
         return (
             (is_wall_up and is_wall_left)
             or (is_wall_up and is_wall_right)
@@ -64,6 +64,7 @@ except ImportError:
 
     def compute_dead_squares(level, target_positions):  # type: ignore[misc]
         return set()
+
 
 from gym import spaces
 
@@ -167,9 +168,7 @@ class SokobanDeadlockGuardrail(gym.Wrapper):
             else []
         )
         dead_squares = (
-            compute_dead_squares(grid, target_positions)
-            if target_positions
-            else set()
+            compute_dead_squares(grid, target_positions) if target_positions else set()
         )
 
         for y in range(h):
