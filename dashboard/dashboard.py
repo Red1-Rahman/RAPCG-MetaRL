@@ -901,7 +901,11 @@ with tab_train:
         env = os.environ.copy()
         env["PYTHONIOENCODING"] = "utf-8"
         proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=str(PROJECT_ROOT), env=env
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=str(PROJECT_ROOT),
+            env=env,
         )
         st.session_state.train_process = proc
         stream_process(proc, st.session_state.train_log)
@@ -1004,15 +1008,20 @@ with tab_infer:
     # Display generated levels on completion below the configuration and live output columns
     if st.session_state.infer_status == "done" and st.session_state.last_save_dir:
         st.markdown("---")
-        st.markdown('<div class="section-header">Generated Levels Preview</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="section-header">Generated Levels Preview</div>',
+            unsafe_allow_html=True,
+        )
         save_path = Path(st.session_state.last_save_dir)
         if save_path.exists():
             files = sorted(glob.glob(str(save_path / "*.npy")))
             if not files:
                 st.info("No level files found in the output directory.")
             else:
-                st.success(f"Successfully generated {len(files)} levels! You can also view them in the **Levels** tab (Set: `{save_path.relative_to(PROJECT_ROOT).as_posix()}`).")
-                
+                st.success(
+                    f"Successfully generated {len(files)} levels! You can also view them in the **Levels** tab (Set: `{save_path.relative_to(PROJECT_ROOT).as_posix()}`)."
+                )
+
                 cols_per_row = 4
                 for row_start in range(0, len(files), cols_per_row):
                     row_files = files[row_start : row_start + cols_per_row]
@@ -1028,8 +1037,10 @@ with tab_infer:
                             if Path(png_path).exists():
                                 st.image(png_path, use_container_width=True)
                             else:
-                                st.markdown(render_level_html(level), unsafe_allow_html=True)
-                            
+                                st.markdown(
+                                    render_level_html(level), unsafe_allow_html=True
+                                )
+
                             unique = len(np.unique(level))
                             size = f"{level.shape[0]}×{level.shape[1]}"
                             st.caption(f"{size} · {unique} tile types")
@@ -1091,7 +1102,11 @@ with tab_infer:
         env = os.environ.copy()
         env["PYTHONIOENCODING"] = "utf-8"
         proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=str(PROJECT_ROOT), env=env
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=str(PROJECT_ROOT),
+            env=env,
         )
         st.session_state.infer_process = proc
         stream_process(proc, st.session_state.infer_log)
