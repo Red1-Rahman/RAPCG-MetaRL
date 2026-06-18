@@ -17,11 +17,11 @@ RAPCG-MetaRL integrates real-time hardware telemetry into a reinforcement learni
 ### Key Results (Published in ACM TOG 2025)
 
 | Algorithm | Domain  | Early Reward | Late Reward | Improvement |
-|-----------|---------|-------------|-------------|-------------|
-| PPO       | Zelda   | −8.54       | +11.84      | +20.38 pts  |
-| PPO       | Sokoban | +2.84       | +6.66       | +3.82 pts   |
-| A2C       | Zelda   | −14.6       | −3.0        | +11.6 pts   |
-| A2C       | Sokoban | −1.9        | +3.2        | +5.1 pts    |
+| --------- | ------- | ------------ | ----------- | ----------- |
+| PPO       | Zelda   | −8.54        | +11.84      | +20.38 pts  |
+| PPO       | Sokoban | +2.84        | +6.66       | +3.82 pts   |
+| A2C       | Zelda   | −14.6        | −3.0        | +11.6 pts   |
+| A2C       | Sokoban | −1.9         | +3.2        | +5.1 pts    |
 
 Both algorithms maintained CPU usage under 5% and RAM under 65%, with resource-aware penalties remaining at zero — demonstrating operation well within configured hardware thresholds.
 
@@ -51,8 +51,9 @@ RAPCG-MetaRL/
 │   ├── inference.py                # Level generation from trained models
 │   ├── inference_timed.py          # Timed inference with detailed metrics
 │   ├── utils.py                    # ResourceMonitor, TrainingLogger, utilities
-│   ├── maml_trainer.py             # MAML meta-learning trainer (proposed)
-│   ├── rlhf_trainer.py             # RLHF fine-tuning pipeline (proposed)
+│   ├── maml_trainer.py             # MAML meta-learning trainer
+│   ├── rlhf_trainer.py             # RLHF fine-tuning pipeline
+│   ├── dashboard/                  # Interactive Streamlit dashboard UI
 │   └── quickstart.py               # Guided demo
 │
 ├── Wrappers/
@@ -122,39 +123,46 @@ pip install -e .
 cd ..
 ```
 
+> [Spacer]
+> [!IMPORTANT]
+> **Virtual Environment Python Interpreter (Windows)**  
+> Always run scripts using the project's virtual environment Python interpreter to ensure dependencies are loaded correctly:
+> ```powershell
+> .\pcg_env\Scripts\python.exe <script> <args>
+> ```
+
 ### 2. Run Tests
 
-```bash
-python test/test.py
+```powershell
+.\pcg_env\Scripts\python.exe test/test.py
 ```
 
 Expected: 5/5 tests pass (Resource Monitor, Training Logger, VGLC Parsing, Content Metrics, PCGRL Environment).
 
 ### 3. Train a Model
 
-```bash
+```powershell
 # Quick test (10k steps, CPU)
-python train.py --game zelda --timesteps 10000
+.\pcg_env\Scripts\python.exe train.py --game zelda --timesteps 10000
 
 # GPU-accelerated training (matches paper results)
-python train.py --game zelda --timesteps 20000 --device cuda
+.\pcg_env\Scripts\python.exe train.py --game zelda --timesteps 20000 --device cuda
 
-# Sokoban
-python train.py --game sokoban --timesteps 20000 --device cuda
+# Sokoban PPO
+.\pcg_env\Scripts\python.exe train.py --game sokoban --timesteps 20000 --device cuda
 
 # A2C comparison
-python train.py --game zelda --algorithm A2C --timesteps 10000 --device cuda
+.\pcg_env\Scripts\python.exe train.py --game zelda --algorithm A2C --timesteps 10000 --device cuda
 ```
 
 ### 4. Generate Levels
 
-```bash
+```powershell
 # Standard inference
-python inference.py checkpoints/zelda_PPO_<timestamp>/final_model.zip --n-levels 10
+.\pcg_env\Scripts\python.exe inference.py checkpoints/zelda_PPO_<timestamp>/final_model.zip --n-levels 10
 
 # Timed inference (with detailed metrics CSV)
-python inference_timed.py checkpoints/zelda_PPO_<timestamp>/final_model.zip \
-  --game zelda --n-levels 20 --log-file inference_timing.csv --device cuda
+.\pcg_env\Scripts\python.exe inference_timed.py checkpoints/zelda_PPO_<timestamp>/final_model.zip --game zelda --n-levels 20 --log-file inference_timing.csv --device cuda
 ```
 
 ### 5. Windows PowerShell (Optimized)
@@ -164,23 +172,32 @@ python inference_timed.py checkpoints/zelda_PPO_<timestamp>/final_model.zip \
 .\quickstart_optimized.ps1
 ```
 
+### 6. Start the Interactive Dashboard
+
+You can use the Streamlit-based dashboard to configure and trigger training, monitor runs with real-time logs, generate and visualize levels, compare metrics from different runs, and annotate pairs of levels for RLHF:
+
+```powershell
+# Start the dashboard using the venv streamlit command
+.\pcg_env\Scripts\streamlit run dashboard/dashboard.py
+```
+
 ---
 
 ## 🔧 Training Parameters
 
-| Parameter            | Description                     | Default   |
-|---------------------|---------------------------------|-----------|
-| `--game`            | Game environment                | `zelda`   |
-| `--representation`  | Representation type             | `narrow`  |
-| `--algorithm`       | RL algorithm (PPO/A2C/SAC)      | `PPO`     |
-| `--timesteps`       | Total training steps            | `50000`   |
-| `--n-steps`         | Steps per update                | `128`     |
-| `--batch-size`      | Batch size                      | `64`      |
-| `--lr`              | Learning rate                   | `2.5e-4`  |
-| `--n-envs`          | Parallel environments           | `1`       |
-| `--device`          | Device (`cpu`/`cuda`/`auto`)    | `auto`    |
-| `--checkpoint-freq` | Checkpoint save frequency       | `1000`    |
-| `--no-solvability-tuning` | Disable solvability weights | off    |
+| Parameter                 | Description                  | Default  |
+| ------------------------- | ---------------------------- | -------- |
+| `--game`                  | Game environment             | `zelda`  |
+| `--representation`        | Representation type          | `narrow` |
+| `--algorithm`             | RL algorithm (PPO/A2C/SAC)   | `PPO`    |
+| `--timesteps`             | Total training steps         | `50000`  |
+| `--n-steps`               | Steps per update             | `128`    |
+| `--batch-size`            | Batch size                   | `64`     |
+| `--lr`                    | Learning rate                | `2.5e-4` |
+| `--n-envs`                | Parallel environments        | `1`      |
+| `--device`                | Device (`cpu`/`cuda`/`auto`) | `auto`   |
+| `--checkpoint-freq`       | Checkpoint save frequency    | `1000`   |
+| `--no-solvability-tuning` | Disable solvability weights  | off      |
 
 ### Hardware Presets (from `config_hardware.py`)
 
@@ -189,10 +206,10 @@ python inference_timed.py checkpoints/zelda_PPO_<timestamp>/final_model.zip \
 python config_hardware.py
 ```
 
-| Preset         | n_envs | timesteps | batch_size | Use Case               |
-|---------------|--------|-----------|------------|------------------------|
-| `PRESET_FAST`  | 6      | 50000     | 128        | Full training run       |
-| `PRESET_LIGHT` | 4      | 50000     | 64         | Running other apps      |
+| Preset         | n_envs | timesteps | batch_size | Use Case           |
+| -------------- | ------ | --------- | ---------- | ------------------ |
+| `PRESET_FAST`  | 6      | 50000     | 128        | Full training run  |
+| `PRESET_LIGHT` | 4      | 50000     | 64         | Running other apps |
 
 ---
 
@@ -253,18 +270,21 @@ print(df[['episode','reward','ram_percent']].tail(20))
 ## 🎮 Supported Environments
 
 ### Games
-| Game    | Grid      | Goal                                      |
-|---------|-----------|-------------------------------------------|
-| Zelda   | 16×16     | Dungeon with valid key→door→player path   |
-| Sokoban | 10×10     | Solvable box-pushing puzzles (NP-hard)    |
-| Binary  | Varies    | Connected binary pattern generation        |
+
+| Game    | Grid   | Goal                                    |
+| ------- | ------ | --------------------------------------- |
+| Zelda   | 16×16  | Dungeon with valid key→door→player path |
+| Sokoban | 10×10  | Solvable box-pushing puzzles (NP-hard)  |
+| Binary  | Varies | Connected binary pattern generation     |
 
 ### Representations
+
 - **Narrow**: Agent edits one tile at a time (default)
 - **Wide**: Agent selects position and tile type simultaneously
 - **Turtle**: Agent moves through the map and places tiles
 
 ### Algorithms
+
 - ✅ **PPO** — Best overall performance (recommended)
 - ✅ **A2C** — Lower sample efficiency, more predictable learning curves
 - ✅ **SAC** — Continuous action spaces only
@@ -319,13 +339,13 @@ print(f"Complexity: {metrics['complexity']:.3f}")
 
 ## 🐛 Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| GPU not detected | `pip install nvidia-ml-py3` or use `--device cpu` |
-| `gym-pcgrl` not found | `cd gym-pcgrl && pip install -e .` |
-| Import errors | `$env:PYTHONPATH += ";D:\Work\thesis\RAPCG-MetaRL"` (PowerShell) |
-| Out of memory | `--batch-size 32 --n-envs 1` |
-| Training too slow | Enable CUDA: `--device cuda` |
+| Issue                 | Solution                                                         |
+| --------------------- | ---------------------------------------------------------------- |
+| GPU not detected      | `pip install nvidia-ml-py3` or use `--device cpu`                |
+| `gym-pcgrl` not found | `cd gym-pcgrl && pip install -e .`                               |
+| Import errors         | `$env:PYTHONPATH += ";D:\Work\thesis\RAPCG-MetaRL"` (PowerShell) |
+| Out of memory         | `--batch-size 32 --n-envs 1`                                     |
+| Training too slow     | Enable CUDA: `--device cuda`                                     |
 
 ---
 
@@ -346,22 +366,23 @@ train.py / inference.py
 
 ### Implementation Status
 
-| Component                        | Status       |
-|----------------------------------|--------------|
-| PPO/A2C Training Pipeline        | ✅ Implemented |
-| Resource-Aware Reward Shaping    | ✅ Implemented |
-| Hardware Telemetry (psutil/pynvml)| ✅ Implemented |
-| Solvability Optimization         | ✅ Implemented |
-| MAML Meta-RL Controller          | 🔄 Proposed   |
-| Adaptive Batch Scheduling        | 🔄 Proposed   |
-| Hybrid PCG Ensemble              | 🔄 Proposed   |
-| Unity/Unreal Integration         | 🔄 Proposed   |
+| Component                          | Status         |
+| ---------------------------------- | -------------- |
+| PPO/A2C Training Pipeline          | ✅ Implemented |
+| Resource-Aware Reward Shaping      | ✅ Implemented |
+| Hardware Telemetry (psutil/pynvml) | ✅ Implemented |
+| Solvability Optimization           | ✅ Implemented |
+| MAML Meta-RL Controller            | ✅ Implemented |
+| Adaptive Batch Scheduling          | 🔄 Proposed    |
+| Hybrid PCG Ensemble                | 🔄 Proposed    |
+| Unity/Unreal Integration           | 🔄 Proposed    |
 
 ---
 
 ## 📦 Dependencies
 
 **Core (Required)**
+
 - Python 3.8+
 - PyTorch 2.1+
 - stable-baselines3
@@ -369,6 +390,7 @@ train.py / inference.py
 - numpy, pandas, psutil, pillow
 
 **Optional**
+
 - `nvidia-ml-py3` — GPU monitoring
 - `jupyter` — Notebooks
 - `matplotlib` — Figure generation
@@ -426,4 +448,4 @@ Code: <https://github.com/Red1-Rahman/RAPCG-MetaRL>
 
 ---
 
-*RAPCG-MetaRL — Resource-Aware PCG that adapts to your hardware. 🎮*
+_RAPCG-MetaRL — Resource-Aware PCG that adapts to your hardware. 🎮_

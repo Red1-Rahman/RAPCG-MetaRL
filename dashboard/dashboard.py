@@ -251,6 +251,19 @@ def init_state():
 
 init_state()
 
+# ── Poll background processes ──────────────────────────────────────────────────
+if st.session_state.train_status == "running" and st.session_state.train_process is not None:
+    poll = st.session_state.train_process.poll()
+    if poll is not None:
+        st.session_state.train_status = "done" if poll == 0 else "error"
+        st.session_state.train_process = None
+
+if st.session_state.infer_status == "running" and st.session_state.infer_process is not None:
+    poll = st.session_state.infer_process.poll()
+    if poll is not None:
+        st.session_state.infer_status = "done" if poll == 0 else "error"
+        st.session_state.infer_process = None
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 TILE_CHARS = {
     0: "·",  # empty
@@ -291,7 +304,7 @@ def status_badge(status: str) -> str:
     return f'<span class="badge badge-{status}">{labels.get(status, status.upper())}</span>'
 
 
-def stream_process(proc, log_list: list, status_key: str):
+def stream_process(proc, log_list: list):
     """Stream stdout/stderr from subprocess into log list."""
 
     def _read(stream):
@@ -309,7 +322,6 @@ def stream_process(proc, log_list: list, status_key: str):
         proc.wait()
         t_out.join()
         t_err.join()
-        st.session_state[status_key] = "done" if proc.returncode == 0 else "error"
 
     threading.Thread(target=_wait, daemon=True).start()
 
@@ -883,7 +895,7 @@ with tab_train:
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=str(PROJECT_ROOT)
         )
         st.session_state.train_process = proc
-        stream_process(proc, st.session_state.train_log, "train_status")
+        stream_process(proc, st.session_state.train_log)
         st.rerun()
 
     if stop_clicked and st.session_state.train_process:
@@ -923,6 +935,15 @@ with tab_infer:
             "Game ", ["zelda", "sokoban", "binary"], key="infer_game"
         )
         infer_mode = st.selectbox("Mode", ["Standard PPO/A2C", "MAML"], index=0)
+
+        # Select algorithm (only relevant for standard SB3 models)
+        if infer_mode == "Standard PPO/A2C":
+            infer_algo = st.selectbox("Algorithm ", ["PPO", "A2C"], index=0, key="infer_algo")
+        else:
+            infer_algo = "PPO"
+
+        infer_repr = st.selectbox("Representation ", ["narrow", "wide", "turtle"], index=0, key="infer_repr")
+
         n_levels = st.number_input(
             "Levels to generate", min_value=1, max_value=100, value=10
         )
@@ -978,6 +999,8 @@ with tab_infer:
                 selected_ckpt,
                 "--game",
                 infer_game,
+                "--representation",
+                infer_repr,
                 "--n-levels",
                 str(n_levels),
                 "--max-steps",
@@ -996,6 +1019,10 @@ with tab_infer:
                 selected_ckpt,
                 "--game",
                 infer_game,
+                "--algorithm",
+                infer_algo,
+                "--representation",
+                infer_repr,
                 "--n-levels",
                 str(n_levels),
                 "--max-steps",
@@ -1004,13 +1031,15 @@ with tab_infer:
                 str(PROJECT_ROOT / log_file),
                 "--device",
                 infer_device,
+                "--save-dir",
+                str(PROJECT_ROOT / "generated_levels" / f"{infer_game}_{infer_algo}_{infer_repr}_standard"),
             ]
 
         proc = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=str(PROJECT_ROOT)
         )
         st.session_state.infer_process = proc
-        stream_process(proc, st.session_state.infer_log, "infer_status")
+        stream_process(proc, st.session_state.infer_log)
         st.rerun()
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1389,3 +1418,8 @@ with tab_compare:
 
         elif run_a == run_b:
             st.warning("Select two different runs to compare.")
+
+# ── Auto-refresh / Rerun while running ────────────────────────────────────────
+if st.session_state.train_status == "running" or st.session_state.infer_status == "running":
+    time.sleep(1.0)
+    st.rerun()

@@ -222,18 +222,15 @@ def test_environment():
         print("Available PCGRL environments:")
         import gym
 
-        # gym.envs.registry is a dict in gym 0.26.2
-        if hasattr(gym.envs.registry, "all"):
-            envs = [
-                env.id for env in gym.envs.registry.all() if "pcgrl" in env.id.lower()
-            ]
-        else:
-            # For newer gym versions where registry is a dict
-            envs = [
-                env_id
-                for env_id in gym.envs.registry.keys()
-                if "pcgrl" in env_id.lower()
-            ]
+        # Match registered environments
+        from gym_pcgrl.envs.probs import PROBLEMS
+        from gym_pcgrl.envs.reps import REPRESENTATIONS
+        pcgrl_ids = {"{}-{}-v0".format(prob, rep) for prob in PROBLEMS.keys() for rep in REPRESENTATIONS.keys()}
+        
+        envs = [
+            env_id for env_id in gym.envs.registry.keys()
+            if env_id in pcgrl_ids
+        ]
 
         for env_id in envs:
             print(f"  - {env_id}")
@@ -245,7 +242,8 @@ def test_environment():
 
         # Try to create an environment
         print("\nTesting environment creation...")
-        env = make_pcgrl_env("zelda", "narrow")
+        monitor = ResourceMonitor(use_gpu=False)
+        env = make_pcgrl_env(resource_monitor=monitor, game="zelda", representation="narrow")
 
         print(f"Environment created successfully")
         print(f"  Observation space: {env.observation_space}")
