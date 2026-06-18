@@ -5,6 +5,11 @@ Test environment setup, resource monitoring, and basic functionality.
 
 import os
 import sys
+if sys.platform.startswith("win"):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except AttributeError:
+        pass
 import numpy as np
 
 # Add project paths - prioritize project root over gym-pcgrl

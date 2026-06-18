@@ -897,8 +897,10 @@ with tab_train:
             if experiment_name.strip():
                 cmd += ["--experiment-name", experiment_name.strip()]
 
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
         proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=str(PROJECT_ROOT)
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=str(PROJECT_ROOT), env=env
         )
         st.session_state.train_process = proc
         stream_process(proc, st.session_state.train_log)
@@ -1049,8 +1051,10 @@ with tab_infer:
                 ),
             ]
 
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
         proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=str(PROJECT_ROOT)
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=str(PROJECT_ROOT), env=env
         )
         st.session_state.infer_process = proc
         stream_process(proc, st.session_state.infer_log)

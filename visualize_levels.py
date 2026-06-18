@@ -203,7 +203,7 @@ def save_level_image(
 
     # Save with high DPI
     img.save(filepath, dpi=(dpi, dpi))
-    print(f"✓ Saved: {filepath}")
+    print(f"[OK] Saved: {filepath}")
 
 
 def create_level_grid(
@@ -257,7 +257,7 @@ def create_level_grid(
 
     if save_path:
         plt.savefig(save_path, dpi=dpi, bbox_inches="tight")
-        print(f"✓ Saved grid: {save_path}")
+        print(f"[OK] Saved grid: {save_path}")
     else:
         plt.show()
 
@@ -310,7 +310,7 @@ def create_training_comparison(
 
     if save_path:
         plt.savefig(save_path, dpi=dpi, bbox_inches="tight")
-        print(f"✓ Saved comparison: {save_path}")
+        print(f"[OK] Saved comparison: {save_path}")
     else:
         plt.show()
 
@@ -384,7 +384,7 @@ def add_legend(game: str = "zelda", save_path: Optional[str] = None, dpi: int = 
 
     if save_path:
         plt.savefig(save_path, dpi=dpi, bbox_inches="tight")
-        print(f"✓ Saved legend: {save_path}")
+        print(f"[OK] Saved legend: {save_path}")
     else:
         plt.show()
 
@@ -468,7 +468,7 @@ def demo_visualizations(game: str = "zelda"):
     legend_path = os.path.join(output_dir, "tile_legend.png")
     add_legend(game, save_path=legend_path, dpi=300)
 
-    print(f"\n✓ Demo visualizations saved to: {output_dir}/")
+    print(f"\n[OK] Demo visualizations saved to: {output_dir}/")
     print(f"  Total files: {len(os.listdir(output_dir))}")
 
 
