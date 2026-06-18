@@ -243,6 +243,7 @@ def init_state():
         "rlhf_pair_source": None,
         "log_queue": queue.Queue(),
         "last_refresh": time.time(),
+        "last_save_dir": None,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -1000,11 +1001,45 @@ with tab_infer:
         )
         st.markdown(f'<div class="log-box">{ilog_text}</div>', unsafe_allow_html=True)
 
+    # Display generated levels on completion below the configuration and live output columns
+    if st.session_state.infer_status == "done" and st.session_state.last_save_dir:
+        st.markdown("---")
+        st.markdown('<div class="section-header">Generated Levels Preview</div>', unsafe_allow_html=True)
+        save_path = Path(st.session_state.last_save_dir)
+        if save_path.exists():
+            files = sorted(glob.glob(str(save_path / "*.npy")))
+            if not files:
+                st.info("No level files found in the output directory.")
+            else:
+                st.success(f"Successfully generated {len(files)} levels! You can also view them in the **Levels** tab (Set: `{save_path.relative_to(PROJECT_ROOT).as_posix()}`).")
+                
+                cols_per_row = 4
+                for row_start in range(0, len(files), cols_per_row):
+                    row_files = files[row_start : row_start + cols_per_row]
+                    cols = st.columns(cols_per_row)
+                    for col, fpath in zip(cols, row_files):
+                        level = load_level(fpath)
+                        if level is None:
+                            continue
+                        name = Path(fpath).stem
+                        with col:
+                            st.markdown(f"**{name}**")
+                            png_path = fpath.replace(".npy", ".png")
+                            if Path(png_path).exists():
+                                st.image(png_path, use_container_width=True)
+                            else:
+                                st.markdown(render_level_html(level), unsafe_allow_html=True)
+                            
+                            unique = len(np.unique(level))
+                            size = f"{level.shape[0]}×{level.shape[1]}"
+                            st.caption(f"{size} · {unique} tile types")
+
     if run_infer and selected_ckpt:
         st.session_state.infer_log = []
         st.session_state.infer_status = "running"
 
         if infer_mode == "MAML":
+            save_dir = str(PROJECT_ROOT / "generated_levels" / "maml")
             cmd = [
                 PY,
                 str(PROJECT_ROOT / "maml_inference_timed.py"),
@@ -1025,6 +1060,11 @@ with tab_infer:
                 infer_device,
             ]
         else:
+            save_dir = str(
+                PROJECT_ROOT
+                / "generated_levels"
+                / f"{infer_game}_{infer_algo}_{infer_repr}_standard"
+            )
             cmd = [
                 PY,
                 str(PROJECT_ROOT / "inference_timed.py"),
@@ -1044,12 +1084,9 @@ with tab_infer:
                 "--device",
                 infer_device,
                 "--save-dir",
-                str(
-                    PROJECT_ROOT
-                    / "generated_levels"
-                    / f"{infer_game}_{infer_algo}_{infer_repr}_standard"
-                ),
+                save_dir,
             ]
+        st.session_state.last_save_dir = save_dir
 
         env = os.environ.copy()
         env["PYTHONIOENCODING"] = "utf-8"
