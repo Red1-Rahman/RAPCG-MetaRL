@@ -4800,6 +4800,7 @@ def init_state():
         "rlhf_pair_source": None,
         "log_queue": queue.Queue(),
         "last_refresh": time.time(),
+        "last_save_dir": None,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -4807,6 +4808,25 @@ def init_state():
 
 
 init_state()
+
+# ── Poll background processes ──────────────────────────────────────────────────
+if (
+    st.session_state.train_status == "running"
+    and st.session_state.train_process is not None
+):
+    poll = st.session_state.train_process.poll()
+    if poll is not None:
+        st.session_state.train_status = "done" if poll == 0 else "error"
+        st.session_state.train_process = None
+
+if (
+    st.session_state.infer_status == "running"
+    and st.session_state.infer_process is not None
+):
+    poll = st.session_state.infer_process.poll()
+    if poll is not None:
+        st.session_state.infer_status = "done" if poll == 0 else "error"
+        st.session_state.infer_process = None
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 TILE_CHARS = {
@@ -4848,7 +4868,7 @@ def status_badge(status: str) -> str:
     return f'<span class="badge badge-{status}">{labels.get(status, status.upper())}</span>'
 
 
-def stream_process(proc, log_list: list, status_key: str):
+def stream_process(proc, log_list: list):
     """Stream stdout/stderr from subprocess into log list."""
 
     def _read(stream):
@@ -4866,7 +4886,6 @@ def stream_process(proc, log_list: list, status_key: str):
         proc.wait()
         t_out.join()
         t_err.join()
-        st.session_state[status_key] = "done" if proc.returncode == 0 else "error"
 
     threading.Thread(target=_wait, daemon=True).start()
 
@@ -5436,11 +5455,17 @@ with tab_train:
             if experiment_name.strip():
                 cmd += ["--experiment-name", experiment_name.strip()]
 
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
         proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=str(PROJECT_ROOT)
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=str(PROJECT_ROOT),
+            env=env,
         )
         st.session_state.train_process = proc
-        stream_process(proc, st.session_state.train_log, "train_status")
+        stream_process(proc, st.session_state.train_log)
         st.rerun()
 
     if stop_clicked and st.session_state.train_process:
@@ -5480,6 +5505,19 @@ with tab_infer:
             "Game ", ["zelda", "sokoban", "binary"], key="infer_game"
         )
         infer_mode = st.selectbox("Mode", ["Standard PPO/A2C", "MAML"], index=0)
+
+        # Select algorithm (only relevant for standard SB3 models)
+        if infer_mode == "Standard PPO/A2C":
+            infer_algo = st.selectbox(
+                "Algorithm ", ["PPO", "A2C"], index=0, key="infer_algo"
+            )
+        else:
+            infer_algo = "PPO"
+
+        infer_repr = st.selectbox(
+            "Representation ", ["narrow", "wide", "turtle"], index=0, key="infer_repr"
+        )
+
         n_levels = st.number_input(
             "Levels to generate", min_value=1, max_value=100, value=10
         )
@@ -5524,17 +5562,60 @@ with tab_infer:
         )
         st.markdown(f'<div class="log-box">{ilog_text}</div>', unsafe_allow_html=True)
 
+    # Display generated levels on completion below the configuration and live output columns
+    if st.session_state.infer_status == "done" and st.session_state.last_save_dir:
+        st.markdown("---")
+        st.markdown(
+            '<div class="section-header">Generated Levels Preview</div>',
+            unsafe_allow_html=True,
+        )
+        save_path = Path(st.session_state.last_save_dir)
+        if save_path.exists():
+            files = sorted(glob.glob(str(save_path / "*.npy")))
+            if not files:
+                st.info("No level files found in the output directory.")
+            else:
+                st.success(
+                    f"Successfully generated {len(files)} levels! You can also view them in the **Levels** tab (Set: `{save_path.relative_to(PROJECT_ROOT).as_posix()}`)."
+                )
+
+                cols_per_row = 4
+                for row_start in range(0, len(files), cols_per_row):
+                    row_files = files[row_start : row_start + cols_per_row]
+                    cols = st.columns(cols_per_row)
+                    for col, fpath in zip(cols, row_files):
+                        level = load_level(fpath)
+                        if level is None:
+                            continue
+                        name = Path(fpath).stem
+                        with col:
+                            st.markdown(f"**{name}**")
+                            png_path = fpath.replace(".npy", ".png")
+                            if Path(png_path).exists():
+                                st.image(png_path, use_container_width=True)
+                            else:
+                                st.markdown(
+                                    render_level_html(level), unsafe_allow_html=True
+                                )
+
+                            unique = len(np.unique(level))
+                            size = f"{level.shape[0]}×{level.shape[1]}"
+                            st.caption(f"{size} · {unique} tile types")
+
     if run_infer and selected_ckpt:
         st.session_state.infer_log = []
         st.session_state.infer_status = "running"
 
         if infer_mode == "MAML":
+            save_dir = str(PROJECT_ROOT / "generated_levels" / "maml")
             cmd = [
                 PY,
                 str(PROJECT_ROOT / "maml_inference_timed.py"),
                 selected_ckpt,
                 "--game",
                 infer_game,
+                "--representation",
+                infer_repr,
                 "--n-levels",
                 str(n_levels),
                 "--max-steps",
@@ -5547,12 +5628,21 @@ with tab_infer:
                 infer_device,
             ]
         else:
+            save_dir = str(
+                PROJECT_ROOT
+                / "generated_levels"
+                / f"{infer_game}_{infer_algo}_{infer_repr}_standard"
+            )
             cmd = [
                 PY,
                 str(PROJECT_ROOT / "inference_timed.py"),
                 selected_ckpt,
                 "--game",
                 infer_game,
+                "--algorithm",
+                infer_algo,
+                "--representation",
+                infer_repr,
                 "--n-levels",
                 str(n_levels),
                 "--max-steps",
@@ -5561,13 +5651,22 @@ with tab_infer:
                 str(PROJECT_ROOT / log_file),
                 "--device",
                 infer_device,
+                "--save-dir",
+                save_dir,
             ]
+        st.session_state.last_save_dir = save_dir
 
+        env = os.environ.copy()
+        env["PYTHONIOENCODING"] = "utf-8"
         proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=str(PROJECT_ROOT)
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=str(PROJECT_ROOT),
+            env=env,
         )
         st.session_state.infer_process = proc
-        stream_process(proc, st.session_state.infer_log, "infer_status")
+        stream_process(proc, st.session_state.infer_log)
         st.rerun()
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -5946,6 +6045,14 @@ with tab_compare:
 
         elif run_a == run_b:
             st.warning("Select two different runs to compare.")
+
+# ── Auto-refresh / Rerun while running ────────────────────────────────────────
+if (
+    st.session_state.train_status == "running"
+    or st.session_state.infer_status == "running"
+):
+    time.sleep(1.0)
+    st.rerun()
 ```
 
 ## fix_sokoban_prefered_levels.py :
