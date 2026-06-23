@@ -14,7 +14,7 @@
 
 RAPCG-MetaRL integrates real-time hardware telemetry into a reinforcement learning reward signal, creating a feedback loop that teaches PCG agents to balance content quality with computational efficiency. The framework targets heterogeneous gaming platforms — from budget laptops to high-end workstations — without requiring separate builds.
 
-### Key Results (Published in ACM TOG 2025)
+### Key Results
 
 | Algorithm | Domain  | Early Reward | Late Reward | Improvement |
 | --------- | ------- | ------------ | ----------- | ----------- |
