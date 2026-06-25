@@ -29,7 +29,7 @@ RAPCG-MetaRL integrates real-time hardware telemetry into a reinforcement learni
 
 **Core (Required)**
 
-- Python 3.8+
+- Python 3.10
 - PyTorch 2.1+
 - stable-baselines3
 - gym
