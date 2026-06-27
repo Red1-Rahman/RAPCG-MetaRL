@@ -1,6 +1,6 @@
-# RAPCG-MetaRL
+# RAPCG-MetaRL ***![B.Sc. Thesis](https://img.shields.io/badge/B.Sc.-Thesis_Project-blue)***
 
-**Resource-Aware Procedural Content Generation via Meta-Reinforcement Learning**   
+**Resource-Aware Procedural Content Generation using Meta Reinforcement Learning for Real-time Game Environments**   
    
 ![Python](https://img.shields.io/badge/Python-3.10-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.1+-ee4c2c)
@@ -19,12 +19,12 @@
 ![Engineering Activities](https://img.shields.io/badge/Engineering_Activities-EA1--EA5-success)
 
 
-## 🎯 Overview
+## Overview 
 
 RAPCG-MetaRL integrates real-time hardware telemetry into a reinforcement learning reward signal, creating a feedback loop that teaches PCG agents to balance content quality with computational efficiency. The framework targets heterogeneous gaming platforms — from budget laptops to high-end workstations — without requiring separate builds.
 
 
-
+---
 
 ### Implementation Status
 
@@ -41,7 +41,7 @@ RAPCG-MetaRL integrates real-time hardware telemetry into a reinforcement learni
 
 ---
 
-## 📦 Dependencies
+## Dependencies
 
 **Core (Required)**
 
@@ -61,7 +61,7 @@ See [requirements.txt](requirements.txt) for full list.
 
 ---
 
-## 📖 Citation
+## Citation
 
 If you use this framework, please cite:
 
@@ -88,15 +88,14 @@ Please also cite the foundational work this project builds upon:
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-- **[gym-pcgrl](https://github.com/amidos2006/gym-pcgrl)** — Ahmed Khalifa et al.'s foundational PCGRL framework
-- **[stable-baselines3](https://github.com/DLR-RM/stable-baselines3)** — High-quality RL implementations
-- **[The Video Game Level Corpus (VGLC)](https://github.com/TheVGLC/TheVGLC)** — Level dataset
-- **[PCG Benchmark](https://github.com/amidos2006/gym-pcgrl)** — PCG evaluation testbed
+- **[gym-pcgrl](https://github.com/amidos2006/gym-pcgrl)** - Ahmed Khalifa et al.'s foundational PCGRL framework
+- **[stable-baselines3](https://github.com/DLR-RM/stable-baselines3)** - High-quality RL implementations
+- **[PCG Benchmark](https://github.com/amidos2006/gym-pcgrl)** - PCG evaluation testbed
 
 
-## 📧 Contact
+## Contact
 
 Redwan Rahman — rahman22205101127@diu.edu.bd  
 Department of Computer Science and Engineering, Daffodil International University
