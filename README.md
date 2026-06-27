@@ -50,13 +50,11 @@ See [requirements.txt](requirements.txt) for full list.
 If you use this framework, please cite:
 
 ```bibtex
-@article{rahman2025rapcg,
+@repo{RAPCG-MetaRL,
   title={Resource-Aware Procedural Content Generation via Meta-Reinforcement
          Learning for Heterogeneous Gaming Platforms},
-  author={Rahman, Redwan and Kabir, Md. Alamgir},
-  journal={ACM Transactions on Graphics},
-  year={2025},
-  publisher={ACM}
+  author={Redwan Rahman},
+  link={https://github.com/Red1-Rahman/RAPCG-MetaRL}
 }
 ```
 
