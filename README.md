@@ -1,6 +1,22 @@
 # RAPCG-MetaRL
 
-**Resource-Aware Procedural Content Generation via Meta-Reinforcement Learning**
+**Resource-Aware Procedural Content Generation via Meta-Reinforcement Learning**   
+   
+![Python](https://img.shields.io/badge/Python-3.10-blue)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.1+-ee4c2c)
+![Docker](https://img.shields.io/badge/Container-Docker-2496ED)
+![OCI](https://img.shields.io/badge/OCI-Compliant-2496ED)
+![ISO/IEC/IEEE 12207](https://img.shields.io/badge/ISO%2FIEC%2FIEEE-12207-blue)
+![SemVer](https://img.shields.io/badge/SemVer-2.0.0-orange)
+![Git](https://img.shields.io/badge/Version_Control-Git-F05032)
+![Reproducible Research](https://img.shields.io/badge/Reproducible-Research-success)
+![Cross Platform](https://img.shields.io/badge/Cross--Platform-Windows%20%7C%20Linux-blueviolet)
+![RL](https://img.shields.io/badge/Reinforcement-Learning-red)
+![Meta Learning](https://img.shields.io/badge/Meta-Learning-purple)
+![Washington Accord](https://img.shields.io/badge/Washington_Accord-Compliant-blue)
+![Complex Engineering Problem](https://img.shields.io/badge/Engineering-Complex_Problem-success)
+![Knowledge Profile](https://img.shields.io/badge/Knowledge_Profile-K2--K8-success)
+![Engineering Activities](https://img.shields.io/badge/Engineering_Activities-EA1--EA5-success)
 
 
 ## 🎯 Overview
