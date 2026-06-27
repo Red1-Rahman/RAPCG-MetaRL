@@ -95,9 +95,6 @@ Please also cite the foundational work this project builds upon:
 - **[The Video Game Level Corpus (VGLC)](https://github.com/TheVGLC/TheVGLC)** — Level dataset
 - **[PCG Benchmark](https://github.com/amidos2006/gym-pcgrl)** — PCG evaluation testbed
 
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
 
 ## 📧 Contact
 
