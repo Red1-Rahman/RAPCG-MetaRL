@@ -26,6 +26,7 @@ ipykernel>=6.0.0
 # Visualization (optional)
 seaborn>=0.11.0
 wandb>=0.12.0  # For experiment tracking (optional)
+streamlit==1.58.0
 
 # Note: gym-pcgrl must be installed separately
 # cd gym-pcgrl && pip install -e .
