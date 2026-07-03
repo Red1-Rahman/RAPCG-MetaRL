@@ -1,6 +1,6 @@
 # Core dependencies
-numpy>=1.26.4  # for gym-pcgrl compatibility
-pandas>=2.2.3 # for numpy numpy==1.26.4 compatibility
+numpy==1.26.4  # for gym-pcgrl compatibility
+pandas==2.2.3 # for numpy numpy==1.26.4 compatibility
 matplotlib>=3.4.0
 pillow>=8.3.0
 
