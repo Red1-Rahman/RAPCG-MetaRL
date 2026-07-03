@@ -1,6 +1,6 @@
 # Core dependencies
-numpy>=1.21.0,<2.0  # NumPy 2.0 breaks gym-pcgrl compatibility
-pandas>=1.3.0
+numpy>=1.26.4  # for gym-pcgrl compatibility
+pandas>=2.2.3 # for numpy numpy==1.26.4 compatibility
 matplotlib>=3.4.0
 pillow>=8.3.0
 
