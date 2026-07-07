@@ -1,0 +1,45 @@
+cff-version: 1.2.0
+title: "RAPCG-MetaRL"
+message: >-
+  If you use RAPCG-MetaRL in your research, please cite this software.
+  If available, also cite the associated undergraduate thesis and any
+  subsequent peer-reviewed publications.
+
+type: software
+
+authors:
+  - family-names: Rahman
+    given-names: Redwan
+    alias: Red1-Rahman
+    email: redwanrahman2002@outlook.com
+    orcid: "https://orcid.org/0009-0005-8407-8941"
+
+repository-code: "https://github.com/Red1-Rahman/RAPCG-MetaRL"
+
+license: "GPL-3.0-or-later"
+
+keywords:
+  - Procedural Content Generation
+  - PCG
+  - Reinforcement Learning
+  - Meta Reinforcement Learning
+  - Meta Learning
+  - PPO
+  - A2C
+  - Gym-PCGRL
+  - Level Generation
+  - Game AI
+  - Artificial Intelligence
+
+abstract: >
+  RAPCG-MetaRL (Resource-Aware Procedural Content Generation via
+  Meta-Reinforcement Learning) is a research framework for procedural
+  content generation that integrates hardware-aware reward optimization
+  with meta-reinforcement learning to generate game levels under
+  resource constraints.
+
+version: "1.0.0"
+
+date-released: 2026-07-07
+
+url: "https://github.com/Red1-Rahman/RAPCG-MetaRL"
