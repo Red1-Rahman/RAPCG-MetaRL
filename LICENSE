@@ -737,3 +737,20 @@ If you use RAPCG-MetaRL in academic research, please cite the associated
 thesis and any subsequent peer-reviewed publications once available.
 
 Citation information will be updated in the repository's CITATION.cff file.
+
+--------------------------------------------------------------------------
+ETHICAL USE STATEMENT
+
+RAPCG-MetaRL was developed for research, education, and the advancement
+of procedural content generation, artificial intelligence, and
+reinforcement learning.
+
+The author strongly discourages the use of this software, derivative
+works, or research based upon it for activities that violate
+internationally recognized human rights, facilitate unlawful
+surveillance, enable autonomous weapon systems intended to harm civilians,
+or otherwise contribute to abuses of human dignity.
+
+This statement expresses the author's ethical expectations and does not
+modify or supersede the legal permissions granted under the GNU General
+Public License v3.0.
