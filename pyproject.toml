@@ -1,0 +1,119 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "rapcg-metarl"
+version = "0.1.0"
+description = "Resource-Aware Procedural Content Generation via Meta-Reinforcement Learning"
+readme = "README.md"
+license = { text = "GPL" }
+authors = [{ name = "Redwan Rahman", email = "redwanrahman2002@outlook.com" }]
+requires-python = ">=3.9,<3.13"
+
+# ── Core runtime dependencies ──────────────────────────────────────────────
+dependencies = [
+    # NumPy pinned — gym-pcgrl narrow_rep/wide_rep use [0,1][numpy_bool]
+    # which breaks on NumPy 2.0; 1.26.x is the last 1.x release.
+    "numpy==1.26.4",
+
+    # Pandas compatible with numpy 1.26.4
+    "pandas==2.2.3",
+
+    # Gym — gym-pcgrl requires old-gym API (< 0.26); shimmy bridges to SB3
+    "gym>=0.21.0,<0.26.0",
+    "shimmy>=2.0",
+
+    # Stable-Baselines3 — PPO / A2C / SAC
+    "stable-baselines3>=1.6.0",
+
+    # PyTorch — MAML functional_forward requires autograd; no CUDA pin here,
+    # install the CUDA wheel separately if needed (see README)
+    "torch>=1.10.0",
+
+    # Visualization
+    "matplotlib>=3.4.0",
+    "pillow>=8.3.0",
+
+    # Resource monitoring
+    "psutil>=5.8.0",
+
+    # Dashboard
+    "streamlit==1.46.0",
+
+    # Utilities
+    "tqdm>=4.62.0",
+    "scipy>=1.7.0",
+]
+
+[project.optional-dependencies]
+# GPU monitoring — requires NVIDIA drivers
+gpu = [
+    "nvidia-ml-py3>=7.352.0",
+]
+
+# Analysis & paper figures
+analysis = [
+    "seaborn>=0.11.0",
+    "matplotlib>=3.4.0",
+]
+
+# Experiment tracking
+tracking = [
+    "wandb>=0.12.0",
+]
+
+# Development & testing
+dev = [
+    "pytest>=6.2.0",
+    "pytest-cov>=4.0.0",
+    "jupyter>=1.0.0",
+    "ipykernel>=6.0.0",
+    "ruff>=0.4.0",
+]
+
+# Everything except CUDA torch
+all = [
+    "rapcg-metarl[gpu,analysis,tracking,dev]",
+]
+
+[project.urls]
+Repository = "https://github.com/redwanrahman/RAPCG-MetaRL"
+
+# ── Console entry points ───────────────────────────────────────────────────
+[project.scripts]
+rapcg-train     = "train:main"
+rapcg-inference = "inference_timed:main"
+rapcg-maml      = "maml_trainer:main"
+rapcg-rlhf      = "rlhf_trainer:main"
+rapcg-dashboard = "dashboard.dashboard:main"
+
+# ── Setuptools package discovery ──────────────────────────────────────────
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["wrappers*", "dashboard*"]
+exclude = ["gym-pcgrl*", "pcg_env*", "test*", "__pycache__*"]
+
+# ── Ruff linter config ────────────────────────────────────────────────────
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+    "E501",  # line too long — handled by formatter
+    "F401",  # unused import — some are conditional (pynvml, wandb)
+]
+
+# ── Pytest config ─────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["test"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+# ── Coverage ──────────────────────────────────────────────────────────────
+[tool.coverage.run]
+source = ["wrappers", "utils", "train", "maml_trainer", "rlhf_trainer"]
+omit = ["test/*", "gym-pcgrl/*", "pcg_env/*", "dashboard/*"]
