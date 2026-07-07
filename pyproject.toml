@@ -7,7 +7,7 @@ name = "rapcg-metarl"
 version = "0.1.0"
 description = "Resource-Aware Procedural Content Generation via Meta-Reinforcement Learning"
 readme = "README.md"
-license = { text = "GPL" }
+license = { file = "LICENSE" }
 authors = [{ name = "Redwan Rahman", email = "redwanrahman2002@outlook.com" }]
 requires-python = ">=3.9,<3.13"
 
