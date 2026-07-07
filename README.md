@@ -105,3 +105,5 @@ Code: <https://github.com/Red1-Rahman/RAPCG-MetaRL>
 ---
 
 _RAPCG-MetaRL — Resource-Aware PCG that adapts to your hardware. 🎮_
+
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
