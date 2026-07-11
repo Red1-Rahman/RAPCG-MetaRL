@@ -14,7 +14,11 @@ The RLPCG-MetaRL framework consists of four major stages:
 ```mermaid
 flowchart TD
 
-    A["PCG Problem Definition<br/>get_stats()<br/>adjust_param()<br/>get_reward()"]
+    A["PCG Problem Definition
+    get_stats()
+    adjust_param()
+    get_reward()"]
+
     B["Gymnasium Environment"]
 
     C["PPO Training"]
@@ -39,7 +43,8 @@ flowchart TD
 
     O["Generate Levels"]
 
-    P["Optional Solvability Guardrail<br/>(Game-specific Validation)"]
+    P["Optional Solvability Guardrail
+    (Game-specific Validation)"]
 
     Q["Human Pairwise Preferences"]
 
@@ -56,20 +61,13 @@ flowchart TD
     B --> C
     B --> D
 
-    C --> E
-    D --> F
-
-    E --> G
-    F --> H
-
-    G --> I
-    H --> J
+    C --> E --> G --> I
+    D --> F --> H --> J
 
     I --> K
     J --> K
 
     K --> L
-
     L --> M
     M --> N
     N --> O
