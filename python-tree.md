@@ -61,6 +61,7 @@ root
 ├── architecture_diagram.py
 ├── compare_approaches.py
 ├── config_hardware.py
+├── fix_sokoban_prefered_levels.py
 ├── generate_paper_figures.py
 ├── graph.ipynb
 ├── inference.py
